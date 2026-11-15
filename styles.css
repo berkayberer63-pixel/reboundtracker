@@ -356,38 +356,74 @@ body {
   border-color: #334155;
 }
 
-/* Role pill active colors */
+/* Role pill colors (unselected border + active fill) */
+.pill-fw {
+  border-color: rgba(239, 68, 68, 0.65);
+}
+.pill-fw:hover {
+  border-color: #ef4444;
+}
 .pill-fw.active {
   background: #dc2626;
   border-color: #ef4444;
   color: #fff;
 }
 
+.pill-mf {
+  border-color: rgba(34, 197, 94, 0.65);
+}
+.pill-mf:hover {
+  border-color: #22c55e;
+}
 .pill-mf.active {
   background: #16a34a;
   border-color: #22c55e;
   color: #fff;
 }
 
+.pill-df {
+  border-color: rgba(59, 130, 246, 0.65);
+}
+.pill-df:hover {
+  border-color: #3b82f6;
+}
 .pill-df.active {
   background: #2563eb;
   border-color: #3b82f6;
   color: #fff;
 }
 
+.pill-gk {
+  border-color: rgba(245, 158, 11, 0.65);
+}
+.pill-gk:hover {
+  border-color: #f59e0b;
+}
 .pill-gk.active {
   background: #d97706;
   border-color: #f59e0b;
   color: #fff;
 }
 
-/* Card Grade pill active colors */
+/* Card Grade pill colors (unselected border + active fill) */
+.pill-gold {
+  border-color: rgba(253, 224, 71, 0.65);
+}
+.pill-gold:hover {
+  border-color: #fde047;
+}
 .pill-gold.active {
   background: linear-gradient(135deg, #f59e0b, #eab308);
   border-color: #fde047;
   color: #090d16;
 }
 
+.pill-master {
+  border-color: rgba(185, 198, 216, 0.65);
+}
+.pill-master:hover {
+  border-color: #b9c6d8;
+}
 .pill-master.active {
   background: linear-gradient(135deg, #b9c6d8 0%, #1E293B 100%);
   border-color: #b9c6d8;
@@ -395,30 +431,60 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
 }
 
+.pill-elite {
+  border-color: rgba(168, 85, 247, 0.65);
+}
+.pill-elite:hover {
+  border-color: #a855f7;
+}
 .pill-elite.active {
   background: #7e22ce;
   border-color: #a855f7;
   color: #fff;
 }
 
+.pill-rare {
+  border-color: rgba(239, 68, 68, 0.65);
+}
+.pill-rare:hover {
+  border-color: #ef4444;
+}
 .pill-rare.active {
   background: #dc2626;
   border-color: #ef4444;
   color: #fff;
 }
 
+.pill-special {
+  border-color: rgba(249, 115, 22, 0.65);
+}
+.pill-special:hover {
+  border-color: #f97316;
+}
 .pill-special.active {
   background: #ea580c;
   border-color: #f97316;
   color: #fff;
 }
 
+.pill-normal {
+  border-color: rgba(148, 163, 184, 0.55);
+}
+.pill-normal:hover {
+  border-color: #94a3b8;
+}
 .pill-normal.active {
   background: #475569;
   border-color: #94a3b8;
   color: #fff;
 }
 
+.pill-region {
+  border-color: rgba(56, 189, 248, 0.65);
+}
+.pill-region:hover {
+  border-color: #38bdf8;
+}
 .pill-region.active {
   background: #0284c7;
   border-color: #38bdf8;
