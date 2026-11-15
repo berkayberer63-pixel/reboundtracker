@@ -22,9 +22,9 @@
   --accent-red: #dc2626;
   --accent-purple: #7e22ce;
   --accent-cyan: #0e7490;
-  --radius-lg: 0;
-  --radius-md: 0;
-  --radius-sm: 0;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 9px;
   --shadow-sm: 0 1px 2px rgba(24, 34, 24, 0.05), 0 1px 1px rgba(24, 34, 24, 0.03);
   --shadow-md: 0 6px 22px -8px rgba(24, 34, 24, 0.15), 0 2px 6px rgba(24, 34, 24, 0.04);
   --sidebar-w: 236px;
@@ -1421,91 +1421,135 @@ body.theme-dark ::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, #ec4899, #8b5cf6, #06b6d4) !important;
 }
 
-/* ---------- Sol alt Gizlilik & KVKK bağlantısı ve yasal sayfa kartı ---------- */
-.nav-legal-link {
-  display: block;
+/* ---------- Sol Sidebar Alt Bilgi (Gizlilik & KVKK) ---------- */
+.sidebar-legal {
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sidebar-legal-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
-  text-align: center;
-  margin-top: 6px;
-  padding: 5px 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-dim);
   text-decoration: none;
-  border: 1px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  text-align: center;
+  transition: color 0.15s ease, background 0.15s ease;
 }
-.nav-legal-link:hover,
-.nav-legal-link.active {
+
+.sidebar-legal-link:hover,
+.sidebar-legal-link.active {
   color: var(--accent);
   background: var(--bg-hover);
-  border-color: var(--border-color);
-}
-body.theme-dark .nav-legal-link {
-  color: #9bb09a;
-}
-body.theme-dark .nav-legal-link:hover,
-body.theme-dark .nav-legal-link.active {
-  color: #f8f8ff;
-  background: rgba(156, 172, 84, 0.16);
-  border-color: var(--border-color);
 }
 
+@media (max-width: 900px) {
+  .sidebar-legal {
+    padding-top: 4px;
+  }
+  .sidebar-legal-link {
+    width: auto;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+  }
+}
+
+/* ---------- Gizlilik & KVKK Sayfası ---------- */
 .legal-card {
-  max-width: 860px;
-  background: rgba(248, 248, 255, 0.94);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
   box-shadow: var(--shadow-md);
-  padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-}
-body.theme-dark .legal-card {
-  background: rgba(18, 27, 19, 0.92);
-  border-color: var(--border-color);
-  color: var(--text-main);
-}
-.legal-section h2 {
-  font-size: 1.02rem;
-  font-weight: 800;
-  color: var(--accent);
-  margin: 0 0 6px;
-}
-body.theme-dark .legal-section h2 {
-  color: #b7c966;
-}
-.legal-section p {
-  margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.65;
-  color: var(--text-main);
-}
-.legal-section ul {
-  margin: 6px 0 0;
-  padding-left: 18px;
-  font-size: 0.86rem;
-  line-height: 1.6;
-  color: var(--text-muted);
-}
-.legal-meta {
-  font-size: 0.78rem;
-  color: var(--text-dim);
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 12px;
+  gap: 20px;
 }
 
-/* ---------- Köşeli Tasarım (Tüm sitede keskin 0px köşeler) ---------- */
-*,
-*::before,
-*::after {
-  border-radius: 0 !important;
+.legal-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
 }
-input[type="range"]::-webkit-slider-thumb,
-::-webkit-scrollbar-thumb,
-::-webkit-scrollbar-track {
-  border-radius: 0 !important;
+
+.legal-title {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-main);
 }
-input[type="range"]::-moz-range-thumb {
-  border-radius: 0 !important;
+
+.legal-updated {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--accent-soft);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.legal-section h2 {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.legal-section p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.68;
+  color: var(--text-muted);
+}
+
+.legal-section p + p {
+  margin-top: 10px;
+}
+
+.legal-footer-actions {
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-start;
+}
+
+.legal-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  border: 1px solid var(--border-color);
+  color: var(--accent);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.legal-back-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .legal-card {
+    padding: 20px 18px;
+  }
+  .legal-title {
+    font-size: 1.2rem;
+  }
 }
