@@ -71,6 +71,15 @@ body {
   font-size: 1.15rem;
 }
 
+.brand-logo-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
 .brand-rvl {
   color: var(--accent-green);
 }
