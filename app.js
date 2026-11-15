@@ -150,6 +150,16 @@
     return (data.items || []).filter((it) => it.slot === slotName && it.target === target);
   }
 
+  function addEquipmentBuffs(subBonus, buffStr, overrideValue = null) {
+    for (const part of String(buffStr || "").split(",")) {
+      const m = part.trim().match(/^\+(\d+)\s+(.+)$/);
+      if (m) {
+        const idx = EQUIP_BUFF_MAP[m[2].trim()];
+        if (idx !== undefined) subBonus[idx] += overrideValue !== null ? overrideValue : Number(m[1]);
+      }
+    }
+  }
+
   function computeEquipmentBonuses(equipIds) {
     const subBonus = new Array(21).fill(0);
     if (!equipIds) return { subBonus, items: [], activeSet: null };
@@ -163,26 +173,14 @@
       const item = allItems.find((x) => String(x.id) === String(id));
       if (item) {
         picked.push(item);
-        for (const part of String(item.buff || "").split(",")) {
-          const m = part.trim().match(/^\+(\d+)\s+(.+)$/);
-          if (m) {
-            const idx = EQUIP_BUFF_MAP[m[2].trim()];
-            if (idx !== undefined) subBonus[idx] += Number(m[1]);
-          }
-        }
+        addEquipmentBuffs(subBonus, item.buff);
       }
     }
     let activeSet = null;
     if (picked.length === 3 && picked[0].setId && picked[0].setId === picked[1].setId && picked[1].setId === picked[2].setId) {
       activeSet = allSets.find((s) => s.id === picked[0].setId) || null;
-      if (activeSet) {
-        for (const part of String(activeSet.buff || "").split(",")) {
-          const m = part.trim().match(/^\+(\d+)\s+(.+)$/);
-          if (m) {
-            const idx = EQUIP_BUFF_MAP[m[2].trim()];
-            if (idx !== undefined) subBonus[idx] += Number(m[1]);
-          }
-        }
+      for (const item of picked) {
+        addEquipmentBuffs(subBonus, item.buff, 1);
       }
     }
     return { subBonus, items: picked, activeSet };
@@ -713,7 +711,7 @@
                       <label>Kol</label>
                       <select class="filter-select detail-equip-sel" data-eq-pid="${p.id}" data-eq-slot="arm">${buildEqOpts("Kol", detEq.arm)}</select>
                     </div>
-                    ${detEff.activeSet ? `<div class="sq-equip-set-badge">✨ Set Aktif: ${detEff.activeSet.name} (${detEff.activeSet.buff})</div>` : ""}
+                    ${detEff.activeSet ? `<div class="sq-equip-set-badge">✨ Set Aktif: ${detEff.activeSet.name} (Tüm ekipmana +1)</div>` : ""}
                   </div>
                 </div>
               </div>
@@ -2222,7 +2220,7 @@
     const eqBonus = computeEquipmentBonuses(eq);
     const badge = document.getElementById("sqEquipSetBadge");
     if (eqBonus.activeSet) {
-      badge.textContent = `✨ Set Aktif: ${eqBonus.activeSet.name} (${eqBonus.activeSet.buff})`;
+      badge.textContent = `✨ Set Aktif: ${eqBonus.activeSet.name} (Tüm ekipmana +1)`;
       badge.classList.remove("hidden");
     } else {
       badge.classList.add("hidden");
