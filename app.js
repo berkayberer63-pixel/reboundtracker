@@ -315,8 +315,9 @@
     const e = state.emblem;
     if (!e) return "none";
     if (p.league !== e.league) return "none";
-    if (p.team === e.team) return p.year === e.year ? "full" : "half";
-    return p.year === e.year ? "half" : "none";
+    const isAll = e.year === 0 || e.year === "ALL";
+    if (p.team === e.team) return (isAll || p.year === e.year) ? "full" : "half";
+    return (isAll || p.year === e.year) ? "half" : "none";
   }
 
   function getEmblemBonusFor(p) {
@@ -580,6 +581,11 @@
     }
 
     // Sort
+    const GRADE_SORT_ORDER = { Gold: 6, Master: 5, Elite: 4, Rare: 3, Special: 2, Normal: 1 };
+    const ROLE_SORT_ORDER = {
+      GF: 12, FRV: 11, "K FT": 10, OOS: 9, KNT: 8, OS: 7,
+      LBR: 6, "K DF": 5, BEK: 4, DF: 3, "LİB": 2, KL: 1
+    };
     const sortMode = state.sort;
     filteredPlayers.sort((a, b) => {
       switch (sortMode) {
@@ -587,24 +593,64 @@
           return b.eff.pwr - a.eff.pwr || a.player.id - b.player.id;
         case "pwr_asc":
           return a.eff.pwr - b.eff.pwr || a.player.id - b.player.id;
+        case "pos_desc":
+          return (ROLE_SORT_ORDER[b.player.role] || 0) - (ROLE_SORT_ORDER[a.player.role] || 0) ||
+            b.eff.pwr - a.eff.pwr;
+        case "pos_asc":
+          return (ROLE_SORT_ORDER[a.player.role] || 0) - (ROLE_SORT_ORDER[b.player.role] || 0) ||
+            b.eff.pwr - a.eff.pwr;
+        case "name_asc":
+          return a.player.name.localeCompare(b.player.name, "tr") || b.eff.pwr - a.eff.pwr;
+        case "name_desc":
+          return b.player.name.localeCompare(a.player.name, "tr") || b.eff.pwr - a.eff.pwr;
         case "ofa_desc":
           return b.eff.ofa - a.eff.ofa || b.eff.pwr - a.eff.pwr;
+        case "ofa_asc":
+          return a.eff.ofa - b.eff.ofa || b.eff.pwr - a.eff.pwr;
         case "def_desc":
           return b.eff.def - a.eff.def || b.eff.pwr - a.eff.pwr;
+        case "def_asc":
+          return a.eff.def - b.eff.def || b.eff.pwr - a.eff.pwr;
         case "guc_desc":
           return b.eff.guc - a.eff.guc || b.eff.pwr - a.eff.pwr;
+        case "guc_asc":
+          return a.eff.guc - b.eff.guc || b.eff.pwr - a.eff.pwr;
         case "hiz_desc":
           return b.eff.hiz - a.eff.hiz || b.eff.pwr - a.eff.pwr;
+        case "hiz_asc":
+          return a.eff.hiz - b.eff.hiz || b.eff.pwr - a.eff.pwr;
         case "tek_desc":
           return b.eff.tek - a.eff.tek || b.eff.pwr - a.eff.pwr;
+        case "tek_asc":
+          return a.eff.tek - b.eff.tek || b.eff.pwr - a.eff.pwr;
         case "zhn_desc":
           return b.eff.zhn - a.eff.zhn || b.eff.pwr - a.eff.pwr;
+        case "zhn_asc":
+          return a.eff.zhn - b.eff.zhn || b.eff.pwr - a.eff.pwr;
         case "total_desc":
           return b.eff.total - a.eff.total || b.eff.pwr - a.eff.pwr;
+        case "total_asc":
+          return a.eff.total - b.eff.total || b.eff.pwr - a.eff.pwr;
         case "year_desc":
           return b.player.year - a.player.year || b.eff.pwr - a.eff.pwr;
-        case "name_asc":
-          return a.player.name.localeCompare(b.player.name, "tr");
+        case "year_asc":
+          return a.player.year - b.player.year || b.eff.pwr - a.eff.pwr;
+        case "team_asc":
+          return (a.player.goleyTeam || a.player.team || "").localeCompare(
+            b.player.goleyTeam || b.player.team || "",
+            "tr"
+          ) || b.eff.pwr - a.eff.pwr;
+        case "team_desc":
+          return (b.player.goleyTeam || b.player.team || "").localeCompare(
+            a.player.goleyTeam || a.player.team || "",
+            "tr"
+          ) || b.eff.pwr - a.eff.pwr;
+        case "grade_desc":
+          return (GRADE_SORT_ORDER[b.player.grade] || 0) - (GRADE_SORT_ORDER[a.player.grade] || 0) ||
+            b.eff.pwr - a.eff.pwr;
+        case "grade_asc":
+          return (GRADE_SORT_ORDER[a.player.grade] || 0) - (GRADE_SORT_ORDER[b.player.grade] || 0) ||
+            b.eff.pwr - a.eff.pwr;
         default:
           return b.eff.pwr - a.eff.pwr;
       }
@@ -747,7 +793,6 @@
           <td>
             <div class="player-name-wrap">
               <span class="player-name-text">${p.name}</span>
-              ${p.number ? `<span class="player-num">#${p.number}</span>` : ""}
             </div>
           </td>
           <td>
@@ -1184,7 +1229,7 @@
       });
     }
 
-    resetAllBtn.addEventListener("click", () => {
+    function resetAllFiltersAndEmblem() {
       state.search = "";
       state.team = "";
       state.year = "";
@@ -1201,6 +1246,14 @@
       state.minSub.fill(0);
       state.weather = "";
       state.level = 0;
+      state.favOnly = false;
+      state.emblem = null;
+      expandedCardId = null;
+      try { localStorage.removeItem("rbd_emblem"); } catch (_) {}
+      if (spiritActiveBadge) {
+        spiritActiveBadge.textContent = "";
+        spiritActiveBadge.classList.add("hidden");
+      }
 
       searchInput.value = "";
       clearSearchBtn.classList.add("hidden");
@@ -1218,12 +1271,30 @@
       weatherSelect.value = "";
       levelSlider.value = "0";
       levelValue.textContent = "0";
+      const favBtn = document.getElementById("favOnlyBtn");
+      if (favBtn) favBtn.classList.remove("active");
+
+      document.querySelectorAll(".players-table thead th .sort-arrow").forEach((el) => el.remove());
+      const pwrTh = document.querySelector('.players-table thead th[data-sort="pwr"]');
+      if (pwrTh) {
+        const arrow = document.createElement("span");
+        arrow.className = "sort-arrow";
+        arrow.textContent = "▼";
+        pwrTh.appendChild(document.createTextNode(" "));
+        pwrTh.appendChild(arrow);
+      }
 
       document
         .querySelectorAll(".pill.active")
         .forEach((b) => b.classList.remove("active"));
+      if (typeof syncSquadEmblemUI === "function") syncSquadEmblemUI();
       applyFilters();
-    });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    resetAllBtn.addEventListener("click", resetAllFiltersAndEmblem);
+    const resetMainBtn = document.getElementById("resetMainBtn");
+    if (resetMainBtn) resetMainBtn.addEventListener("click", resetAllFiltersAndEmblem);
 
     // Pills
     document.getElementById("rolePills").addEventListener("click", (e) => {
@@ -1275,16 +1346,32 @@
       applyFilters();
     });
 
-    // Table Header Sort
+    // Table Header Sort (toggles asc/desc on repeated clicks)
     document.querySelector(".players-table thead").addEventListener("click", (e) => {
       const th = e.target.closest("th[data-sort]");
       if (!th) return;
       const col = th.dataset.sort;
-      const targetSort = `${col}_desc`;
+      const textFirstAsc = col === "name" || col === "team";
+      const descKey = `${col}_desc`;
+      const ascKey = `${col}_asc`;
+      let targetSort;
+      if (state.sort === descKey) {
+        targetSort = ascKey;
+      } else if (state.sort === ascKey) {
+        targetSort = descKey;
+      } else {
+        targetSort = textFirstAsc ? ascKey : descKey;
+      }
       state.sort = targetSort;
       if ([...sortSelect.options].some((o) => o.value === targetSort)) {
         sortSelect.value = targetSort;
       }
+      document.querySelectorAll(".players-table thead th .sort-arrow").forEach((el) => el.remove());
+      const arrow = document.createElement("span");
+      arrow.className = "sort-arrow";
+      arrow.textContent = targetSort.endsWith("_asc") ? "▲" : "▼";
+      th.appendChild(document.createTextNode(" "));
+      th.appendChild(arrow);
       applyFilters();
     });
 
@@ -1454,9 +1541,15 @@
 
     function refreshEmblemYears(keep) {
       const team = emblemTeamSel.value;
-      const years = EMBLEMS.filter((e) => e.team === team).map((e) => e.year).sort((a, b) => b - a);
-      emblemYearSel.innerHTML = years.map((y) => `<option value="${y}">${y}</option>`).join("");
-      if (keep && years.includes(keep)) emblemYearSel.value = String(keep);
+      const years = EMBLEMS.filter((e) => e.team === team).map((e) => e.year).sort((a, b) => {
+        if (a === 0) return -1;
+        if (b === 0) return 1;
+        return b - a;
+      });
+      emblemYearSel.innerHTML = years
+        .map((y) => `<option value="${y}">${y === 0 ? "ALL (Tüm Yıllar)" : y}</option>`)
+        .join("");
+      if (keep !== undefined && keep !== null && years.includes(keep)) emblemYearSel.value = String(keep);
       refreshEmblemStars();
     }
 
@@ -1494,6 +1587,17 @@
         </div>`;
       });
 
+      const isAll = emb.year === 0;
+      const rulesHtml = isAll
+        ? `
+          <div><strong>Tam bonus:</strong> ${teamLabel(emb.team)} tüm yıl (ALL) oyuncuları</div>
+          <div><strong>Yarım bonus (yukarı yuvarlanır):</strong> ${emb.league} bölgesindeki diğer takımların tüm oyuncuları</div>
+          <div><strong>Etkisiz:</strong> ${emb.league} dışındaki tüm oyuncular</div>`
+        : `
+          <div><strong>Tam bonus:</strong> ${teamLabel(emb.team)} ${emb.year} oyuncuları</div>
+          <div><strong>Yarım bonus (yukarı yuvarlanır):</strong> ${teamLabel(emb.team)} farklı yıl oyuncuları ve ${emb.league} bölgesindeki diğer takımların ${emb.year} oyuncuları</div>
+          <div><strong>Etkisiz:</strong> ${emb.league} dışındaki tüm oyuncular ve bölgedeki diğer takımların farklı yıl oyuncuları</div>`;
+
       emblemPreview.innerHTML = `
         <div class="emb-eff-list">${rows}</div>
         <div class="emb-total-grid">
@@ -1504,11 +1608,7 @@
               <span class="emb-total-half">½ +${half[k]}</span>
             </div>`).join("")}
         </div>
-        <div class="emb-rules">
-          <div><strong>Tam bonus:</strong> ${teamLabel(emb.team)} ${emb.year} oyuncuları</div>
-          <div><strong>Yarım bonus (yukarı yuvarlanır):</strong> ${teamLabel(emb.team)} farklı yıl oyuncuları ve ${emb.league} bölgesindeki diğer takımların ${emb.year} oyuncuları</div>
-          <div><strong>Etkisiz:</strong> ${emb.league} dışındaki tüm oyuncular ve bölgedeki diğer takımların farklı yıl oyuncuları</div>
-        </div>`;
+        <div class="emb-rules">${rulesHtml}</div>`;
 
       emblemPreview.querySelectorAll(".emb-eff-row[data-pick-star]").forEach((row) => {
         row.addEventListener("click", () => {
@@ -1549,7 +1649,7 @@
           bonus: sumEmblemEffects(emb, stars)
         };
         try { localStorage.setItem("rbd_emblem", JSON.stringify(state.emblem)); } catch (_) {}
-        spiritActiveBadge.textContent = `${emb.team} ${emb.year} ${stars}★`;
+        spiritActiveBadge.textContent = `${emb.team} ${emb.year === 0 ? "ALL" : emb.year} ${stars}★`;
         spiritActiveBadge.classList.remove("hidden");
       }
       spiritModal.classList.add("hidden");
@@ -1587,7 +1687,36 @@
     else if (tabName === "compare") renderCompareView();
   }
 
+  function initColorMode() {
+    const saved = localStorage.getItem("rbd_color_mode") || "light";
+    const applyMode = (mode) => {
+      const isDark = mode === "dark";
+      document.body.classList.toggle("theme-dark", isDark);
+      const btn = document.getElementById("colorModeToggle");
+      if (btn) {
+        btn.innerHTML = isDark ? "<span>☀️</span><span>Açık Mod</span>" : "<span>🌙</span><span>Karanlık Mod</span>";
+        btn.setAttribute("aria-pressed", String(isDark));
+      }
+    };
+    const bgSelect = document.getElementById("bgThemeSelect");
+    if (bgSelect && bgSelect.parentNode && !document.getElementById("colorModeToggle")) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "colorModeToggle";
+      btn.className = "color-mode-btn";
+      btn.title = "Açık / Karanlık Mod Değiştir";
+      bgSelect.insertAdjacentElement("beforebegin", btn);
+      btn.addEventListener("click", () => {
+        const next = document.body.classList.contains("theme-dark") ? "light" : "dark";
+        localStorage.setItem("rbd_color_mode", next);
+        applyMode(next);
+      });
+    }
+    applyMode(saved);
+  }
+
   function initNavigation() {
+    initColorMode();
     document.querySelectorAll("#mainNav .nav-link[data-tab]").forEach((btn) => {
       if (btn.tagName === "A" && btn.getAttribute("href")) return;
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
@@ -1650,8 +1779,31 @@
 
   function initEmblemsView() {
     const searchEl = document.getElementById("embSearchInput");
+    const yearEl = document.getElementById("embYearFilter");
     const regionPills = document.getElementById("embRegionPills");
     const starPills = document.getElementById("embStarPills");
+
+    if (yearEl) {
+      const years = [...new Set(EMBLEMS.filter((e) => e.year > 0).map((e) => e.year))].sort((a, b) => b - a);
+      const hasAll = EMBLEMS.some((e) => !e.year || e.year === 0);
+      let opts = `<option value="">Tüm Yıllar</option>`;
+      if (hasAll) opts += `<option value="ALL">ALL (Tüm Yıllar)</option>`;
+      opts += years.map((y) => `<option value="${y}">${y}</option>`).join("");
+      yearEl.innerHTML = opts;
+      yearEl.addEventListener("change", () => {
+        embViewState.yearFilter = yearEl.value;
+        if (embViewState.yearFilter === "ALL") {
+          for (const cs of embViewState.cardStates.values()) cs.mode = "all";
+        } else if (embViewState.yearFilter) {
+          const yr = Number(embViewState.yearFilter);
+          for (const cs of embViewState.cardStates.values()) {
+            cs.mode = "yearly";
+            cs.year = yr;
+          }
+        }
+        renderEmblemsView();
+      });
+    }
 
     searchEl.addEventListener("input", () => {
       embViewState.search = searchEl.value.trim().toLowerCase();
@@ -1694,6 +1846,11 @@
 
     const filtered = groups.filter((g) => {
       if (embViewState.regions.size > 0 && !embViewState.regions.has(g.league)) return false;
+      if (embViewState.yearFilter === "ALL" && !g.allEntry) return false;
+      if (embViewState.yearFilter && embViewState.yearFilter !== "ALL") {
+        const yr = Number(embViewState.yearFilter);
+        if (!g.yearlyEntries.some((y) => y.year === yr)) return false;
+      }
       if (embViewState.search) {
         const hay = `${g.team} ${teamLabel(g.team)} ${g.league}`.toLowerCase();
         if (!hay.includes(embViewState.search)) return false;
@@ -1724,9 +1881,15 @@
 
       for (const g of list) {
         if (!embViewState.cardStates.has(g.team)) {
+          const defMode = embViewState.yearFilter === "ALL" && g.allEntry
+            ? "all"
+            : (g.yearlyEntries.length > 0 ? "yearly" : "all");
+          const defYear = embViewState.yearFilter && embViewState.yearFilter !== "ALL"
+            ? Number(embViewState.yearFilter)
+            : (g.yearlyEntries[0]?.year || 0);
           embViewState.cardStates.set(g.team, {
-            mode: g.yearlyEntries.length > 0 ? "yearly" : "all",
-            year: g.yearlyEntries[0]?.year || 0,
+            mode: defMode,
+            year: defYear,
             stars: embViewState.globalStars
           });
         }
@@ -1741,12 +1904,21 @@
         const curStars = Math.min(cs.stars, maxStars);
         const bonus = sumEmblemEffects(activeEntry, curStars);
 
+        const STAR_GRADE_META = {
+          1: { cls: "emb-grade-normal", label: "Normal" },
+          2: { cls: "emb-grade-special", label: "Özel" },
+          3: { cls: "emb-grade-rare", label: "Ender" },
+          4: { cls: "emb-grade-expert", label: "Uzman" },
+          5: { cls: "emb-grade-super", label: "Süper" }
+        };
+        const gradeMeta = STAR_GRADE_META[curStars] || STAR_GRADE_META[3];
+
         const disp = getTeamDisplay(g.team);
         const initials = disp.goleyName.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
         const embIcon = (window.EMBLEM_ICONS || {})[g.team];
         const crestHtml = embIcon
-          ? `<img src="assets/emblems/${embIcon}" alt="${disp.goleyName}" loading="lazy" style="width:36px;height:36px;object-fit:contain;" onerror="this.style.display='none';this.parentNode.textContent='${initials}';" />`
-          : initials;
+          ? `<img src="assets/emblems/${embIcon}" alt="${disp.goleyName}" loading="lazy" class="emb-stage-icon" onerror="this.style.display='none';this.parentNode.querySelector('.emb-stage-fallback').style.display='flex';" /><span class="emb-stage-fallback" style="display:none;">${initials}</span>`
+          : `<span class="emb-stage-fallback">${initials}</span>`;
         const staffPills = [];
         if (activeEntry.staff) {
           for (const [sk, label] of STAFF_KEY_MAP) {
@@ -1767,8 +1939,11 @@
           return `
             <div class="emb-bar-row">
               <span class="emb-bar-label">${lbl}</span>
-              <div class="emb-bar-track"><div class="emb-bar-fill" style="width:${pct}%"></div></div>
-              <span class="emb-bar-val">+${val}</span>
+              <div class="emb-bar-track">
+                <div class="emb-bar-fill" style="width:${pct}%"></div>
+                <div class="emb-bar-segs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+              </div>
+              <span class="emb-bar-val">${val}</span>
             </div>
           `;
         }).join("");
@@ -1782,33 +1957,45 @@
           `<option value="${y.year}" ${y.year === activeEntry.year ? "selected" : ""}>${y.year}</option>`
         ).join("");
 
+        const yrShort = cs.mode === "all"
+          ? "ALL"
+          : (activeEntry.year ? String(activeEntry.year).slice(-2) : "");
+        const bannerTitle = yrShort ? `${yrShort} ${disp.goleyName}` : disp.goleyName;
+
         html += `
-          <div class="emb-card">
-            <div class="emb-card-head">
-              <div class="emb-crest">${crestHtml}</div>
-              <div>
-                <div class="emb-card-title">${disp.goleyName}</div>
-                <div class="emb-card-sub">${g.league}</div>
+          <div class="emb-card emb-game-card ${gradeMeta.cls}">
+            <div class="emb-stage">
+              ${curStars === 5 ? `<span class="holo-hex"></span><span class="holo-shine"></span>` : ""}
+              <div class="emb-stage-sheen" aria-hidden="true"></div>
+              <div class="emb-stage-top">
+                <span class="emb-em-tag">EM</span>
+                <span class="emb-grade-tag">${gradeMeta.label}</span>
               </div>
+              <div class="emb-stage-crest">${crestHtml}</div>
             </div>
-            <div class="emb-mode-switch">
-              <button class="emb-mode-btn ${cs.mode === "yearly" ? "active" : ""}" data-emb-team="${g.team}" data-set-mode="yearly">Yıllı</button>
-              <button class="emb-mode-btn ${cs.mode === "all" ? "active" : ""}" data-emb-team="${g.team}" data-set-mode="all">Tüm Yıllar</button>
+            <div class="emb-name-banner">
+              <span class="emb-banner-title">${bannerTitle}</span>
+              <span class="emb-banner-sub">${g.league}</span>
             </div>
-            ${cs.mode === "yearly" && g.yearlyEntries.length > 0 ? `
-              <div class="emb-year-row">
-                <span>Sezon Yılı</span>
-                <select class="emb-year-select" data-emb-team="${g.team}">${yearOptions}</select>
+            <div class="emb-game-body">
+              <div class="emb-bars">${barsHtml}</div>
+              <div class="emb-controls-row">
+                <div class="emb-mode-switch">
+                  <button class="emb-mode-btn ${cs.mode === "yearly" ? "active" : ""}" data-emb-team="${g.team}" data-set-mode="yearly">Yıllı</button>
+                  <button class="emb-mode-btn ${cs.mode === "all" ? "active" : ""}" data-emb-team="${g.team}" data-set-mode="all">Tüm Yıllar</button>
+                </div>
+                ${cs.mode === "yearly" && g.yearlyEntries.length > 0 ? `
+                  <select class="emb-year-select" data-emb-team="${g.team}" title="Sezon Yılı">${yearOptions}</select>
+                ` : ""}
               </div>
-            ` : ""}
-            ${staffPills.length > 0 ? `
-              <div class="emb-staff-row">
-                <span>Teknik heyet ruhu</span>
-                ${staffPills.join("")}
-              </div>
-            ` : ""}
-            <div class="emb-bars">${barsHtml}</div>
-            <div class="emb-card-stars">${starBtns}</div>
+              ${staffPills.length > 0 ? `
+                <div class="emb-staff-row">
+                  <span>Teknik heyet:</span>
+                  ${staffPills.join("")}
+                </div>
+              ` : ""}
+              <div class="emb-card-stars">${starBtns}</div>
+            </div>
           </div>
         `;
       }
@@ -1852,7 +2039,7 @@
   // 3. EKİPMANLAR SAYFASI
   // =========================================================================
   const eqViewState = {
-    tab: "items",
+    tab: "sets",
     search: "",
     slots: new Set(),
     targets: new Set()
@@ -1937,23 +2124,53 @@
       `).join("");
     } else if (eqViewState.tab === "sets") {
       const list = data.sets.filter((s) => {
+        if (eqViewState.targets.size > 0 && !eqViewState.targets.has(s.target)) return false;
         if (!q) return true;
         return `${s.name} ${s.cat} ${s.buff} ${s.skill || ""} ${s.target}`.toLowerCase().includes(q);
       });
       countLabel.textContent = `${list.length} set gösteriliyor`;
-      container.innerHTML = list.map((s) => `
-        <div class="eq-card">
-          <div class="eq-card-title" style="color:${s.color || "#f1f5f9"}">${s.name}</div>
-          <div class="eq-tags">
-            <span class="eq-tag">${s.cat}</span>
-            <span class="eq-tag">${s.target}</span>
+      const slotOrder = ["Krampon", "Kol", "Bacak"];
+      const slotIcons = { "Krampon": "👟", "Kol": "💪", "Bacak": "🦵" };
+      container.innerHTML = list.map((s) => {
+        const pieces = slotOrder.map((slot) =>
+          (data.items || []).find((it) => it.setId === s.id && it.slot === slot)
+        ).filter(Boolean);
+        const firstTier = (pieces[0] && pieces[0].tier) || "";
+        const tierBadge = firstTier.replace("Kademe ", "") || "C";
+        const bonusSum = String(s.buff || "").split(",").reduce((acc, part) => {
+          const m = part.trim().match(/^\+(\d+)/);
+          return acc + (m ? Number(m[1]) : 0);
+        }, 0);
+        const piecesHtml = pieces.map((it) => `
+          <div class="eq-set-piece">
+            <span class="eq-set-slot-lbl">${it.slot.toUpperCase()}</span>
+            <div class="eq-set-img-wrap">
+              ${it.id ? `<img src="assets/equipment/${it.id}.png" alt="${it.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';" /><span style="display:none;">${slotIcons[it.slot] || "⚙️"}</span>` : `<span>${slotIcons[it.slot] || "⚙️"}</span>`}
+            </div>
+            <span class="eq-set-cat">${it.cat || it.slot}</span>
+            <span class="eq-set-buff">${it.buff}</span>
+            ${it.skill ? `<span class="eq-set-skill">⚡ ${it.skill}</span>` : ""}
           </div>
-          <div class="eq-buff-text">${s.buff} + Set Bonusu (+1)</div>
-          <div class="eq-tags" style="margin-top:auto;">
-            ${s.skill ? `<span class="eq-skill-pill">${s.skill}</span>` : ""}
+        `).join("");
+        return `
+          <div class="eq-set-card">
+            <div class="eq-set-head">
+              <div>
+                <div class="eq-set-title-row">
+                  <span class="eq-set-title">${s.name}</span>
+                  <span class="eq-set-tier">${tierBadge}</span>
+                </div>
+                <div class="eq-set-sub">${s.target} seti • Set bonusu: tüm parçalara +1</div>
+              </div>
+              <div class="eq-set-total">
+                <span class="eq-set-total-num">+${bonusSum}</span>
+                <span class="eq-set-total-lbl">toplam bonus</span>
+              </div>
+            </div>
+            <div class="eq-set-pieces">${piecesHtml}</div>
           </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     } else {
       const list = data.skills.filter((sk) => {
         if (!q) return true;
@@ -2339,12 +2556,15 @@
     }
   }
 
-  function autoFillSquad() {
+  function autoFillSquad(gradeFilter = null) {
     const layout = FORMATIONS[sqState.formation] || [];
     const maxBudget = sqState.maxCost > 0 ? sqState.maxCost : Infinity;
-    const pool = sqState.emblemOnly && state.emblem
+    let pool = sqState.emblemOnly && state.emblem
       ? allPlayers.filter((p) => p.team === state.emblem.team)
       : allPlayers;
+    if (gradeFilter) {
+      pool = pool.filter((p) => p.grade === gradeFilter);
+    }
 
     // Score each player at current sqState.level (+ emblem)
     const scored = pool.map((p) => ({
@@ -2394,8 +2614,13 @@
     const embOnlyBtn = document.getElementById("sqEmblemOnlyBtn");
     if (!txtEl) return;
     if (state.emblem) {
-      txtEl.textContent = `${state.emblem.team} (${state.emblem.year}) ${state.emblem.stars}★`;
-      hintEl.textContent = `Aktif amblem: ${teamLabel(state.emblem.team)}`;
+      const embIcon = (window.EMBLEM_ICONS || {})[state.emblem.team];
+      const yrTxt = state.emblem.year === 0 ? "ALL" : state.emblem.year;
+      const tName = teamLabel(state.emblem.team);
+      txtEl.innerHTML = embIcon
+        ? `<img src="assets/emblems/${embIcon}" alt="${tName}" class="sq-emblem-logo" />`
+        : tName;
+      hintEl.innerHTML = `<strong>${tName}</strong> · ${yrTxt} · ${state.emblem.stars}★`;
     } else {
       txtEl.textContent = "+ Amblem Seç";
       hintEl.textContent = "Amblem seçilmedi, + ile amblem seç.";
@@ -2455,7 +2680,8 @@
       renderSquadPitch();
     });
 
-    document.getElementById("sqAutoFillBtn")?.addEventListener("click", autoFillSquad);
+    document.getElementById("sqAutoFillBtn")?.addEventListener("click", () => autoFillSquad(null));
+    document.getElementById("sqAutoBestRareBtn")?.addEventListener("click", () => autoFillSquad("Rare"));
 
     document.getElementById("sqRemoveSlotBtn")?.addEventListener("click", () => {
       if (sqState.selectedSlot !== null && sqState.selectedSlot !== undefined) {
@@ -2676,6 +2902,7 @@
         <div class="rc-top-grade">${gradeLabel}</div>
         <div class="rc-hero">
           <div class="rc-holo-grid"></div>
+          ${p.grade === "Master" ? `<div class="holo-hex"></div><div class="holo-shine"></div>` : ""}
           <div class="rc-pos-block">
             <span class="rc-pos-code">${formatRoleCode(p.role)}</span>
             <span class="rc-pos-sub">${roleGroup}</span>
@@ -2857,7 +3084,8 @@
         const eqCount = [eq.cle, eq.leg, eq.arm].filter(Boolean).length;
         const eqBadge = eqCount > 0 ? `<span class="sq-slot-eq-badge" title="${eqCount} Ekipman Takılı">🛡️${eqCount}</span>` : "";
         return `
-          <div class="sq-slot filled ${sqState.selectedSlot === idx ? "selected" : ""}" draggable="true" data-slot-idx="${idx}" style="top:${y}%;left:${x}%;" title="Sürükle: Taşı • Tek tık: Seç / Ekipman Tak • Çift tık: Kartı Gör">
+          <div class="sq-slot filled ${sqState.selectedSlot === idx ? "selected" : ""}" draggable="true" data-slot-idx="${idx}" style="top:${y}%;left:${x}%;" title="Sürükle: Taşı • Tek tık: Seç / Ekipman Tak • Çift tık: Kartı Gör • Sağ tık / ×: Çıkar">
+            <button type="button" class="sq-slot-remove" data-remove-slot="${idx}" title="Oyuncuyu Çıkar">×</button>
             ${eqBadge}
             <span class="sq-slot-role">${formatRoleCode(p.role)}</span>
             <span class="sq-slot-name">${p.name}</span>
@@ -2913,6 +3141,24 @@
       if (sqState.slots[idx]) {
         el.addEventListener("dragstart", (e) => {
           e.dataTransfer.setData("text/plain", `slot:${idx}`);
+        });
+        el.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          sqState.slots[idx] = null;
+          sqState.slotEquip[idx] = { cle: "", leg: "", arm: "" };
+          if (sqState.selectedSlot === idx) sqState.selectedSlot = null;
+          renderSquadPitch();
+        });
+      }
+      const remBtn = el.querySelector(".sq-slot-remove");
+      if (remBtn) {
+        remBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (slotClickTimer) { clearTimeout(slotClickTimer); slotClickTimer = null; }
+          sqState.slots[idx] = null;
+          sqState.slotEquip[idx] = { cle: "", leg: "", arm: "" };
+          if (sqState.selectedSlot === idx) sqState.selectedSlot = null;
+          renderSquadPitch();
         });
       }
       el.addEventListener("click", () => {
