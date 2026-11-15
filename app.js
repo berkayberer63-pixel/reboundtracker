@@ -2879,13 +2879,13 @@
 
     let embMatchCount = 0;
     if (state.emblem) {
-      embMatchCount = allPlayers.filter((p) => p.goleyTeam === state.emblem.team).length;
+      embMatchCount = allPlayers.filter((p) => p.team === state.emblem.team).length;
     }
     embBtn.textContent = `Seçili Amblem (${embMatchCount})`;
 
     const list = [];
     for (const p of allPlayers) {
-      if (sqState.emblemOnly && state.emblem && p.goleyTeam !== state.emblem.team) continue;
+      if (sqState.emblemOnly && state.emblem && p.team !== state.emblem.team) continue;
       if (sqState.roles.size > 0 && !sqState.roles.has(p.role)) continue;
       if (sqState.grade && p.grade !== sqState.grade) continue;
       if (sqState.year && String(p.year) !== sqState.year) continue;
