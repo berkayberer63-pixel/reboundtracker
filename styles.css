@@ -147,6 +147,8 @@ body {
 
 /* Filter Panel */
 .filter-panel {
+  position: relative;
+  z-index: 40;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 10px;
@@ -3840,4 +3842,97 @@ body {
   font-size: 0.72rem;
   font-weight: 600;
   color: #7dd3fc;
+}
+
+/* Custom Team Picker with Icons & League Groups */
+.team-picker {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.team-picker-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  padding: 7px 11px;
+}
+
+.team-picker-btn-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-picker-caret {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.team-picker-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.team-picker-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 245px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: var(--bg-card, #111827);
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+  padding: 5px;
+  z-index: 120;
+}
+
+.team-picker-group-hdr {
+  padding: 7px 9px 4px;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-blue, #60a5fa);
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.team-picker-opt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 9px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.83rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.team-picker-opt:hover {
+  background: rgba(96, 165, 250, 0.14);
+}
+
+.team-picker-opt.active {
+  background: rgba(59, 130, 246, 0.25);
+  color: #fff;
+  font-weight: 600;
 }

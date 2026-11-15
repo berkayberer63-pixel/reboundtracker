@@ -386,6 +386,97 @@
   }
 
   // Populate Team & Year Dropdowns
+  const TEAM_LEAGUE_ORDER = ["Güney Avrupa", "Kuzey Avrupa", "Türkiye", "Milli Takımlar"];
+  let teamPickerMeta = new Map();
+
+  function buildTeamIconImg(code) {
+    const embIcon = (window.EMBLEM_ICONS || {})[code];
+    if (!embIcon) return "";
+    return `<img class="team-picker-icon" src="assets/emblems/${embIcon}" alt="" loading="lazy" onerror="this.style.display='none';" />`;
+  }
+
+  function syncTeamPickerUI(val) {
+    const picker = document.getElementById("teamPicker");
+    if (!picker) return;
+    const btnLabel = picker.querySelector(".team-picker-btn-label");
+    const info = val ? teamPickerMeta.get(val) : null;
+    if (btnLabel) {
+      btnLabel.innerHTML = info
+        ? `${buildTeamIconImg(info.code)}<span>${info.label}</span>`
+        : `<span>Tüm Takımlar</span>`;
+    }
+    picker.querySelectorAll(".team-picker-opt").forEach((opt) => {
+      opt.classList.toggle("active", opt.dataset.value === (val || ""));
+    });
+  }
+
+  function renderTeamPicker(groupedTeams) {
+    if (!teamSelect || !teamSelect.parentNode) return;
+    teamSelect.style.display = "none";
+
+    let picker = document.getElementById("teamPicker");
+    if (!picker) {
+      picker = document.createElement("div");
+      picker.id = "teamPicker";
+      picker.className = "team-picker";
+      picker.innerHTML = `
+        <button type="button" class="team-picker-btn filter-select" aria-haspopup="listbox" aria-expanded="false">
+          <span class="team-picker-btn-label"><span>Tüm Takımlar</span></span>
+          <span class="team-picker-caret">▾</span>
+        </button>
+        <div class="team-picker-menu hidden" role="listbox"></div>
+      `;
+      teamSelect.insertAdjacentElement("afterend", picker);
+
+      const btn = picker.querySelector(".team-picker-btn");
+      const menu = picker.querySelector(".team-picker-menu");
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = !menu.classList.contains("hidden");
+        menu.classList.toggle("hidden", isOpen);
+        btn.setAttribute("aria-expanded", String(!isOpen));
+      });
+
+      menu.addEventListener("click", (e) => {
+        const opt = e.target.closest(".team-picker-opt");
+        if (!opt) return;
+        const val = opt.dataset.value || "";
+        teamSelect.value = val;
+        state.team = val;
+        syncTeamPickerUI(val);
+        menu.classList.add("hidden");
+        btn.setAttribute("aria-expanded", "false");
+        applyFilters();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!picker.contains(e.target)) {
+          menu.classList.add("hidden");
+          btn.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          menu.classList.add("hidden");
+          btn.setAttribute("aria-expanded", "false");
+        }
+      });
+    }
+
+    const menu = picker.querySelector(".team-picker-menu");
+    let html = `<button type="button" class="team-picker-opt active" data-value=""><span>Tüm Takımlar</span></button>`;
+    for (const [league, teams] of groupedTeams) {
+      html += `<div class="team-picker-group-hdr">${league}</div>`;
+      for (const t of teams) {
+        html += `<button type="button" class="team-picker-opt" data-value="${t.code}">${buildTeamIconImg(t.code)}<span>${t.label}</span></button>`;
+      }
+    }
+    menu.innerHTML = html;
+    syncTeamPickerUI(teamSelect.value);
+  }
+
   function populateDropdowns() {
     const teamMap = new Map();
     const yearsSet = new Set();
@@ -393,20 +484,39 @@
     for (const p of allPlayers) {
       if (p.team && !teamMap.has(p.team)) {
         const label = p.goleyTeam || p.team;
-        teamMap.set(p.team, label);
+        teamMap.set(p.team, { code: p.team, label, league: p.league || "Diğer" });
       }
       if (p.year) yearsSet.add(p.year);
     }
 
-    const sortedTeams = Array.from(teamMap.entries()).sort((a, b) =>
-      a[1].localeCompare(b[1], "tr")
-    );
-    for (const [code, label] of sortedTeams) {
-      const opt = document.createElement("option");
-      opt.value = code;
-      opt.textContent = label;
-      teamSelect.appendChild(opt);
+    teamPickerMeta = teamMap;
+    const byLeague = new Map();
+    for (const item of teamMap.values()) {
+      if (!byLeague.has(item.league)) byLeague.set(item.league, []);
+      byLeague.get(item.league).push(item);
     }
+    for (const list of byLeague.values()) {
+      list.sort((a, b) => a.label.localeCompare(b.label, "tr"));
+    }
+
+    const orderedLeagues = [
+      ...TEAM_LEAGUE_ORDER.filter((lg) => byLeague.has(lg)),
+      ...Array.from(byLeague.keys()).filter((lg) => !TEAM_LEAGUE_ORDER.includes(lg))
+    ];
+    const groupedTeams = orderedLeagues.map((lg) => [lg, byLeague.get(lg)]);
+
+    for (const [league, teams] of groupedTeams) {
+      const grp = document.createElement("optgroup");
+      grp.label = league;
+      for (const t of teams) {
+        const opt = document.createElement("option");
+        opt.value = t.code;
+        opt.textContent = t.label;
+        grp.appendChild(opt);
+      }
+      teamSelect.appendChild(grp);
+    }
+    renderTeamPicker(groupedTeams);
 
     const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
     for (const yr of sortedYears) {
@@ -1017,6 +1127,7 @@
 
     teamSelect.addEventListener("change", () => {
       state.team = teamSelect.value;
+      syncTeamPickerUI(state.team);
       applyFilters();
     });
 
@@ -1094,6 +1205,7 @@
       searchInput.value = "";
       clearSearchBtn.classList.add("hidden");
       teamSelect.value = "";
+      syncTeamPickerUI("");
       yearSelect.value = "";
       sortSelect.value = "pwr_desc";
       minOfaInput.value = "";
