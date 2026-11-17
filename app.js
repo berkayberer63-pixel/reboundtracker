@@ -1770,19 +1770,72 @@
   // =========================================================================
   // TAB NAVIGATION
   // =========================================================================
-  let activeTab = "players";
-  function switchTab(tabName) {
-    activeTab = tabName;
+  let activeTab = document.body.dataset.page || "players";
+  let playersRendered = false;
+  const PAGE_META = {
+    home: { file: "index.html", title: "RBDTracker — Ana Sayfa" },
+    players: { file: "oyuncular.html", title: "RBDTracker — Rebound Oyuncu Kartları" },
+    emblems: { file: "amblemler.html", title: "RBDTracker — Amblemler" },
+    equipments: { file: "ekipmanlar.html", title: "RBDTracker — Ekipmanlar" },
+    squad: { file: "kadro.html", title: "RBDTracker — Kadro Kur" },
+    compare: { file: "karsilastirma.html", title: "RBDTracker — Oyuncu Karşılaştırma" }
+  };
+
+  function resolveTabFromPath(pathname) {
+    const file = (pathname || "").split("/").pop() || "index.html";
+    for (const [tab, meta] of Object.entries(PAGE_META)) {
+      if (meta.file === file) return tab;
+    }
+    return null;
+  }
+
+  function switchTab(tabName, options = {}) {
+    const { animate = true, pushHistory = false, scrollTop = true } = options;
+    const targetTab = PAGE_META[tabName] ? tabName : "players";
+    const prevTab = activeTab;
+    activeTab = targetTab;
+    document.body.dataset.page = targetTab;
+
     document.querySelectorAll("#mainNav .nav-link").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.tab === tabName);
+      btn.classList.toggle("active", btn.dataset.tab === targetTab);
     });
+
+    const targetView = document.getElementById(`view-${targetTab}`);
     document.querySelectorAll(".page-view").forEach((view) => {
-      view.classList.toggle("hidden", view.id !== `view-${tabName}`);
+      const isTarget = view === targetView;
+      view.classList.toggle("hidden", !isTarget);
+      if (!isTarget) view.classList.remove("page-view-enter");
     });
-    if (tabName === "emblems") renderEmblemsView();
-    else if (tabName === "equipments") renderEquipmentsView();
-    else if (tabName === "squad") renderSquadView();
-    else if (tabName === "compare") renderCompareView();
+
+    if (targetView && animate && prevTab !== targetTab && !document.body.classList.contains("no-anim")) {
+      targetView.classList.remove("page-view-enter");
+      void targetView.offsetWidth;
+      targetView.classList.add("page-view-enter");
+    }
+
+    if (scrollTop && prevTab !== targetTab) {
+      window.scrollTo(0, 0);
+    }
+
+    const meta = PAGE_META[targetTab];
+    if (meta) {
+      document.title = meta.title;
+      if (pushHistory) {
+        try {
+          window.history.pushState({ tab: targetTab }, "", meta.file);
+        } catch (_) {}
+      }
+    }
+
+    if (targetTab === "players") {
+      if (allPlayers.length > 0 && !playersRendered) {
+        playersRendered = true;
+        applyFilters();
+      }
+    } else if (targetTab === "emblems") renderEmblemsView();
+    else if (targetTab === "equipments") renderEquipmentsView();
+    else if (targetTab === "squad") renderSquadView();
+    else if (targetTab === "compare") renderCompareView();
   }
 
   function initColorMode() {
@@ -1847,13 +1900,33 @@
   function initNavigation() {
     initColorMode();
     initAnimMode();
+    const bindSpaLink = (el, getTab) => {
+      el.addEventListener("click", (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        const tab = getTab();
+        if (!tab || !document.getElementById(`view-${tab}`)) return;
+        e.preventDefault();
+        if (activeTab !== tab) {
+          switchTab(tab, { animate: true, pushHistory: true, scrollTop: true });
+        }
+      });
+    };
+
     document.querySelectorAll("#mainNav .nav-link[data-tab]").forEach((btn) => {
-      if (btn.tagName === "A" && btn.getAttribute("href")) return;
-      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+      bindSpaLink(btn, () => btn.dataset.tab);
     });
     document.querySelectorAll(".brand[data-nav]").forEach((el) => {
-      if (el.tagName === "A" && el.getAttribute("href")) return;
-      el.addEventListener("click", () => switchTab(el.dataset.nav));
+      bindSpaLink(el, () => el.dataset.nav);
+    });
+    document.querySelectorAll(".home-cta-row a[href]").forEach((el) => {
+      bindSpaLink(el, () => resolveTabFromPath(el.getAttribute("href")));
+    });
+
+    window.addEventListener("popstate", (e) => {
+      const tab = (e.state && e.state.tab) || resolveTabFromPath(window.location.pathname);
+      if (tab && document.getElementById(`view-${tab}`) && activeTab !== tab) {
+        switchTab(tab, { animate: true, pushHistory: false, scrollTop: true });
+      }
     });
   }
 
@@ -3809,6 +3882,8 @@
     initEquipmentsView();
     initSquadView();
     initCompareView();
+    const initialPage = document.body.dataset.page || "players";
+    switchTab(initialPage, { animate: false, pushHistory: false, scrollTop: false });
     try {
       const preloaded = window.PLAYERS_DATA;
       if (Array.isArray(preloaded) && preloaded.length > 0) {
@@ -3855,10 +3930,15 @@
         }
       } catch (_) {}
       populateDropdowns();
-      applyFilters();
       syncSquadEmblemUI();
-      const initialPage = document.body.dataset.page || "players";
-      switchTab(initialPage);
+      if (activeTab === "players") {
+        playersRendered = true;
+        applyFilters();
+      } else if (activeTab === "squad") {
+        renderSquadView();
+      } else if (activeTab === "compare") {
+        renderCompareView();
+      }
     } catch (err) {
       console.error("Veri yükleme hatası:", err);
       playersTableBody.innerHTML = `<tr><td colspan="13" class="loading-cell">Veri dosyası (players-data.js / players.json) yüklenemedi.</td></tr>`;
