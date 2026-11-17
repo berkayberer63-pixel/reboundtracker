@@ -30,8 +30,6 @@
   --sidebar-w: 236px;
 }
 
-html { scroll-behavior: smooth; }
-
 body {
   font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, "Segoe UI", Roboto, sans-serif;
   background-color: var(--bg-body);
@@ -43,7 +41,7 @@ body {
 
 ::selection { background: rgba(156, 172, 84, 0.32); }
 
-/* ---------- ASCII arka plan: orijinal renkler ---------- */
+/* ---------- ASCII arka plan: statik ---------- */
 #asciiBgCanvas {
   opacity: 1;
 }
@@ -56,7 +54,6 @@ body {
   bottom: 0;
   width: var(--sidebar-w);
   background: rgba(248, 248, 255, 0.94);
-  backdrop-filter: blur(10px);
   border-bottom: none;
   border-right: 1px solid var(--border-color);
   z-index: 200;
@@ -90,7 +87,7 @@ body {
   border: 1px solid rgba(52, 92, 50, 0.25);
   box-shadow: 0 4px 12px rgba(52, 92, 50, 0.2);
 }
-.brand-rvl { color: var(--accent); }
+.brand-rbd { color: var(--accent); }
 .brand-tracker { color: var(--text-main); }
 
 .nav-links {
@@ -214,7 +211,6 @@ body {
   border: 1px solid var(--border-color) !important;
   border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-md);
-  backdrop-filter: blur(8px);
 }
 
 .squad-pitch-wrap {
@@ -237,7 +233,6 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 999px;
   padding: 6px 14px;
-  backdrop-filter: blur(8px);
   color: var(--text-main);
 }
 .btn-compare-go,
@@ -1551,5 +1546,395 @@ body.theme-dark ::-webkit-scrollbar-thumb {
   }
   .legal-title {
     font-size: 1.2rem;
+  }
+}
+
+/* =========================================================================
+   ANİMASYONLARI KAPAT / PERFORMANS MODU (body.no-anim)
+   ========================================================================= */
+.anim-toggle-btn {
+  margin-top: 0;
+}
+
+.anim-toggle-btn.is-off {
+  border-color: rgba(217, 119, 6, 0.55) !important;
+  color: #b45309 !important;
+  background: rgba(245, 158, 11, 0.1) !important;
+}
+
+body.theme-dark .anim-toggle-btn.is-off {
+  border-color: rgba(251, 191, 36, 0.5) !important;
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.14) !important;
+}
+
+body.no-anim *,
+body.no-anim *::before,
+body.no-anim *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+body.no-anim .goley-header-Master,
+body.no-anim .grade-Master,
+body.no-anim .pill-master.active,
+body.no-anim .rc-grade-Master .rc-hero,
+body.no-anim .emb-grade-super .emb-stage {
+  background-size: 100% 100% !important;
+  background-position: 0% 50% !important;
+}
+
+body.no-anim .holo-hex {
+  opacity: 0.24 !important;
+  mix-blend-mode: normal !important;
+}
+
+body.no-anim .holo-shine {
+  opacity: 0.3 !important;
+  background-size: 100% 100% !important;
+  mix-blend-mode: normal !important;
+}
+
+/* =========================================================================
+   RBDTRACKER ÖZGÜN TASARIM: COMMAND DECK HEADERS & BENTO FİLTRE MATRİSİ
+   ========================================================================= */
+.rbd-deck-head {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  text-align: left !important;
+  gap: 16px;
+  flex-wrap: nowrap;
+  padding: 16px 22px !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.rbd-head-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rbd-head-kicker {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+body.theme-dark .rbd-head-kicker {
+  color: var(--accent-2);
+}
+
+.rbd-deck-head .hero-title {
+  font-size: 1.32rem !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.rbd-deck-head .hero-subtitle {
+  font-size: 0.8rem !important;
+  margin: 2px 0 0 !important;
+}
+
+.rbd-head-stat {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 7px 14px;
+  white-space: nowrap;
+}
+
+.rbd-head-stat .results-counter,
+.rbd-head-stat .eq-count-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.rbd-command-deck,
+.rbd-emb-deck,
+.rbd-eq-deck {
+  border-radius: var(--radius-lg) !important;
+  padding: 16px 18px !important;
+  gap: 12px !important;
+}
+
+.rbd-command-deck .pill,
+.rbd-emb-deck .pill,
+.rbd-eq-deck .pill {
+  border-radius: 999px !important;
+  padding: 5px 11px !important;
+  font-weight: 600;
+  font-size: 0.73rem;
+}
+
+/* Oyuncular: Tek Satır Araç Çubuğu */
+.rbd-cmd-toolbar {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.25fr) minmax(135px, 0.85fr) minmax(100px, 0.55fr) minmax(175px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.rbd-tool-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Oyuncular: 3 Sütunlu Bento Filtre Matrisi */
+.rbd-bento-filters {
+  display: grid;
+  grid-template-columns: 1.2fr 0.95fr 1.15fr;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.rbd-bento-cell {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+body.theme-dark .rbd-bento-cell,
+body.theme-dark .rbd-head-stat {
+  background: #0d150e;
+  border-color: var(--border-subtle);
+}
+
+.rbd-cell-head {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.rbd-role-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  flex: 1;
+  align-content: start;
+}
+
+.rbd-role-grid .pill {
+  justify-content: center;
+  text-align: center;
+  padding: 6px 4px !important;
+  border-bottom-width: 2.5px;
+}
+
+.rbd-grade-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  flex: 1;
+  align-content: center;
+}
+
+.rbd-grade-grid .pill {
+  text-align: center;
+}
+
+.rbd-cell-side {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rbd-region-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.rbd-region-grid .pill {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rbd-level-dock {
+  border-top: 1px dashed var(--border-color);
+  padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rbd-level-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rbd-level-row #levelSlider {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+/* Amblemler: 2 Satırlı Kompakt Kontrol Şeridi */
+.rbd-emb-row-top {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 10px;
+  align-items: end;
+}
+
+.rbd-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.rbd-field-lbl {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.rbd-emb-row-bot {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 10px;
+}
+
+.rbd-chip-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rbd-star-segmented {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.rbd-star-segmented .pill {
+  border: none !important;
+  border-right: 1px solid var(--border-color) !important;
+  border-radius: 0 !important;
+  padding: 6px 4px !important;
+  text-align: center;
+  background: transparent;
+}
+
+.rbd-star-segmented .pill:last-child {
+  border-right: none !important;
+}
+
+.rbd-star-segmented .pill.active {
+  background: var(--accent) !important;
+  color: #fff !important;
+}
+
+body.theme-dark .rbd-star-segmented {
+  background: var(--bg-input);
+}
+
+/* Ekipmanlar: Birleşik Mod Sekmeleri + Arama + Alt Filtre Çubuğu */
+.rbd-eq-top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.rbd-eq-tabs {
+  display: inline-grid !important;
+  grid-template-columns: repeat(3, auto) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 4px !important;
+  gap: 4px !important;
+  background: var(--bg-card-alt) !important;
+}
+
+.rbd-eq-tabs .eq-subtab {
+  padding: 7px 14px !important;
+  font-size: 0.8rem !important;
+  border-radius: var(--radius-sm) !important;
+  white-space: nowrap;
+}
+
+.rbd-eq-subdock {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.rbd-eq-subdock.hidden {
+  display: none !important;
+}
+
+.rbd-eq-dock-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rbd-cell-head-inline {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+@media (max-width: 1120px) {
+  .rbd-cmd-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rbd-cmd-search {
+    grid-column: 1 / -1;
+  }
+  .rbd-tool-actions {
+    grid-column: 1 / -1;
+  }
+  .rbd-bento-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rbd-cell-side {
+    grid-column: 1 / -1;
+  }
+  .rbd-eq-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .rbd-bento-filters,
+  .rbd-emb-row-top,
+  .rbd-emb-row-bot {
+    grid-template-columns: 1fr;
+  }
+  .rbd-eq-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    width: 100%;
   }
 }

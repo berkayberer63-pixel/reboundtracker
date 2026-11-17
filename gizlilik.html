@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="theme-light.css" />
 </head>
 <body data-page="privacy">
-  <script>try{if(localStorage.getItem("rbd_color_mode")==="dark")document.body.classList.add("theme-dark");}catch(_){}</script>
+  <script>try{if(localStorage.getItem("rbd_color_mode")==="dark")document.body.classList.add("theme-dark");if(localStorage.getItem("rbd_no_anim")==="1")document.body.classList.add("no-anim");}catch(_){}</script>
   <canvas id="asciiBgCanvas" aria-hidden="true"></canvas>
   <!-- Top Navbar -->
   <header class="navbar">
@@ -32,7 +32,7 @@
         </select>
         <a href="index.html" class="brand" data-nav="home">
           <img class="brand-logo-img" src="assets/favicon.png" alt="RBD" />
-          <span class="brand-rvl">RBD</span><span class="brand-tracker">Tracker</span>
+          <span class="brand-rbd">RBD</span><span class="brand-tracker">Tracker</span>
         </a>
         <nav class="nav-links" id="mainNav">
           <a class="nav-link" href="index.html" data-tab="home"><span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></span><span class="nav-txt">Ana Sayfa</span></a>
@@ -128,6 +128,32 @@
         });
       }
       applyMode(saved);
+
+      const savedOff = localStorage.getItem("rbd_no_anim") === "1";
+      const applyAnim = (isOff) => {
+        document.body.classList.toggle("no-anim", isOff);
+        window.__rbdPauseBg = isOff;
+        const aBtn = document.getElementById("animToggleBtn");
+        if (aBtn) {
+          aBtn.classList.toggle("is-off", isOff);
+          aBtn.innerHTML = isOff ? "<span>✨</span><span>Animasyonları Aç</span>" : "<span>⚡</span><span>Animasyonları Kapat</span>";
+          aBtn.setAttribute("aria-pressed", String(isOff));
+        }
+        window.dispatchEvent(new CustomEvent("rbd:anim-change", { detail: { paused: isOff } }));
+      };
+      if (bgSelect && bgSelect.parentNode && !document.getElementById("animToggleBtn")) {
+        const aBtn = document.createElement("button");
+        aBtn.type = "button";
+        aBtn.id = "animToggleBtn";
+        aBtn.className = "color-mode-btn anim-toggle-btn";
+        bgSelect.insertAdjacentElement("beforebegin", aBtn);
+        aBtn.addEventListener("click", () => {
+          const nextOff = !document.body.classList.contains("no-anim");
+          localStorage.setItem("rbd_no_anim", nextOff ? "1" : "0");
+          applyAnim(nextOff);
+        });
+      }
+      applyAnim(savedOff);
     })();
   </script>
 </body>

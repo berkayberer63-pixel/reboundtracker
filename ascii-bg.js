@@ -638,19 +638,6 @@
     }
 
     const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.addEventListener("pointerdown", (e) => {
-      if (activeTheme !== "frog") return;
-      if (e.target !== document.body && e.target !== document.documentElement) return;
-      const px = e.clientX;
-      const py = e.clientY;
-      addRipple(px, py, 0.7, 75);
-      for (let i = 0; i < frogs.length; i++) {
-        const f = frogs[i];
-        if (f.state === "rest" && Math.hypot(f.x - px, f.y - py) < 220) {
-          startLeap(f);
-        }
-      }
-    });
 
     function drawFrame(dt) {
       if (!reducedMotion) {
@@ -2651,8 +2638,14 @@
     return sceneCache[activeTheme];
   }
 
+  let rafId = 0;
+
+  function isPaused() {
+    return window.__rbdPauseBg || document.hidden || document.body.classList.contains("no-anim");
+  }
+
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = 1;
     width = window.innerWidth;
     height = window.innerHeight;
     canvas.width = Math.max(1, Math.floor(width * dpr));
@@ -2663,10 +2656,19 @@
 
     const sc = getActiveScene();
     sc.onResize();
-    sc.drawFrame(0, performance.now() / 1000);
+    sc.drawFrame(0.016, isPaused() ? 4.2 : performance.now() / 1000);
+  }
+
+  function stopLoop() {
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
   }
 
   function frame(now) {
+    rafId = 0;
+    if (isPaused()) return;
     const sc = getActiveScene();
     const minMs = 1000 / sc.fps;
     if (now - lastDraw >= minMs - 1) {
@@ -2675,10 +2677,31 @@
       lastDraw = now;
       sc.drawFrame(dt, now / 1000);
     }
-    requestAnimationFrame(frame);
+    rafId = requestAnimationFrame(frame);
   }
 
-  window.addEventListener("resize", resize);
+  function syncLoop() {
+    if (isPaused()) {
+      stopLoop();
+      const sc = getActiveScene();
+      sc.drawFrame(0.016, 4.2);
+    } else if (!rafId) {
+      lastTime = performance.now();
+      lastDraw = 0;
+      rafId = requestAnimationFrame(frame);
+    }
+  }
+
+  let resizeTimer = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 150);
+  });
+  window.addEventListener("rbd:anim-change", syncLoop);
+  document.addEventListener("visibilitychange", syncLoop);
+
   resize();
-  requestAnimationFrame(frame);
+  if (!isPaused()) {
+    rafId = requestAnimationFrame(frame);
+  }
 })();

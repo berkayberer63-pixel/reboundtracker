@@ -269,6 +269,46 @@
   const EMBLEMS = Array.isArray(window.EMBLEMS_DATA) ? window.EMBLEMS_DATA : [];
   const STAR_LABELS = ["", "1★ Normal", "2★ Özel", "3★ Ender", "4★ Uzman", "5★ Süper"];
 
+  const GOLEY_TEAM_CODES = {
+    "ABD": "USA", "Ace Milano": "AML", "ACF Firenze": "AFZ", "Almanya": "GER",
+    "Amsterdam Look": "ASR", "Amsterdam Rook": "ASR", "Anatolian Star": "STI",
+    "Anatolian Warriors": "AWA", "Anatolian Wolves": "AWA", "Arjantin": "ARG",
+    "AT Matador": "ATM", "Avustralya": "AUS", "Bat Knight": "BKN", "Belçika": "BEL",
+    "Black Lion": "BLL", "Black Sea Hawks": "NHA", "Black Sea Storm": "NLS",
+    "Blue Navy": "BNV", "Bosna-Hersek": "BIH", "Brezilya": "BRA",
+    "Catalonia King": "CTK", "Cataluna King": "CTK", "Cezayir": "ALG",
+    "Dark Eagles": "DEG", "Ekvador": "ECU", "FC Napoli": "FNP", "FC Sapphire": "FSP",
+    "FC Spurs": "FSS", "Fildişi Sahili": "CIV", "Fiorentina": "AFZ", "Fire Bird": "FIB",
+    "Flying Birds": "FYB", "Fransa": "FRA", "Gana": "GHA", "Green Crocodiles": "WCR",
+    "Güney Kore": "KOR", "Hırvatistan": "CRO", "Hollanda": "NED", "Honduras": "HND",
+    "Ice Lion": "ICL", "İngiltere": "ENG", "İran": "IRN", "İspanya": "ESP",
+    "İsviçre": "SUI", "İtalya": "ITA", "Japonya": "JPN", "Kamerun": "CMR",
+    "King of Jungle": "KOJ", "King Sociedad": "KSD", "Knight Hoven": "NTH",
+    "Knighthoven": "NTH", "Kolombiya": "COL", "Kosta Rika": "CRC", "London Cruiser": "LDC",
+    "Lyon Lilly": "LOL", "Lyon Lily": "LOL", "Man Angel": "MAG", "Man Devil": "MAD",
+    "Mandeville": "MAD", "Marseille Rose": "MAR", "Meksika": "MEX", "Napoli": "FNP",
+    "Nijerya": "NGA", "Northern Hawks": "NHA", "Northlanders": "NLS", "Paris Iris": "PIR",
+    "Portekiz": "POR", "Queen Madrid": "QMD", "Real Sociedad": "KSD", "Red Bear": "RDB",
+    "Red Soldier": "RSD", "Red Wind": "WOA", "Romeu": "WFR", "Rusya": "RUS",
+    "Schalke 04": "SK4", "Shark 04": "SK4", "SL Ruby": "SLR", "Snow Tigers": "STI",
+    "South Falcons": "SFA", "Southern Falcons": "SFA", "Şili": "CHL", "Torino Zebra": "TRZ",
+    "Türkiye": "TUR", "Uruguay": "URU", "Valencia": "BKN", "White Lily": "FSS",
+    "Wild Crocs": "WCR", "Wind of Anatolia": "WOA", "Wolf Roma": "WFR",
+    "Wyvern Milano": "WML", "Yellow Hornet": "YHN", "Yunanistan": "GRE"
+  };
+  const GOLEY_TEAM_CODES_LC = Object.fromEntries(
+    Object.entries(GOLEY_TEAM_CODES).map(([k, v]) => [k.toLocaleLowerCase("tr"), v])
+  );
+  function hydratePlayerTeams(players) {
+    for (const p of players) {
+      if (!p.team && p.goleyTeam) {
+        p.team = GOLEY_TEAM_CODES[p.goleyTeam] ||
+          GOLEY_TEAM_CODES_LC[String(p.goleyTeam).toLocaleLowerCase("tr")] ||
+          GOLEY_TEAM_CODES_LC[String(p.goleyTeam).toLowerCase()] || "";
+      }
+    }
+  }
+
   const teamLabelMap = new Map();
   const teamDisplayMap = new Map();
   function ensureTeamMaps() {
@@ -546,8 +586,7 @@
 
       if (q) {
         const nameMatch = normStr(p.name).includes(q);
-        const teamMatch =
-          normStr(p.goleyTeam).includes(q) || normStr(p.teamName).includes(q);
+        const teamMatch = normStr(p.goleyTeam).includes(q);
         if (!nameMatch && !teamMatch) continue;
       }
 
@@ -755,6 +794,78 @@
     `;
   }
 
+  function buildDetailRowHtml(p) {
+    const detEq = playerDetailEquip.get(p.id) || { cle: "", leg: "", arm: "" };
+    const detEff = getEffectiveStats(p, state.level, detEq);
+    let emblemTxt = "Yok";
+    if (state.emblem) {
+      const modeTxt = { full: "Tam bonus", half: "Yarım bonus", none: "Etkisiz" }[detEff.emblemMode];
+      emblemTxt = `${state.emblem.team} ${state.emblem.year} ${state.emblem.stars}★ — ${modeTxt}`;
+    }
+    const weatherTxt = WEATHER_LABELS[p.weather] || p.weather;
+    const isGk = p.pos === "GK" || p.role === "KL";
+    const buildEqOpts = (slotName, selId) => {
+      const items = getEquipmentsBySlot(slotName, isGk);
+      return `<option value="">Yok</option>` + items.map((it) =>
+        `<option value="${it.id}" ${String(it.id) === String(selId) ? "selected" : ""}>${it.name} (${it.buff})</option>`
+      ).join("");
+    };
+
+    return `
+      <tr class="detail-row">
+        <td colspan="13">
+          <div class="detail-popup-wrap">
+            ${renderGoleyCardHtml(p, detEff, state.level)}
+
+            <div class="detail-side-info">
+              <div class="detail-side-row"><span>Bölge</span><strong>${p.league}</strong></div>
+              <div class="detail-side-row"><span>Maliyet</span><strong>${p.cost}</strong></div>
+              <div class="detail-side-row"><span>Hava Durumu</span><strong>${weatherTxt}</strong></div>
+              <div class="detail-side-row"><span>Amblem</span><strong class="emb-mode-${detEff.emblemMode}">${emblemTxt}</strong></div>
+              ${p.skill ? `<div class="detail-side-row"><span>Tam Yetenek</span><strong>⚡ ${p.skill}</strong></div>` : ""}
+
+              <div class="detail-equip-sim">
+                <div class="detail-equip-title">Ekipman Simülatörü</div>
+                <div class="detail-equip-row">
+                  <label>Krampon</label>
+                  <select class="filter-select detail-equip-sel" data-eq-pid="${p.id}" data-eq-slot="cle">${buildEqOpts("Krampon", detEq.cle)}</select>
+                </div>
+                <div class="detail-equip-row">
+                  <label>Bacak</label>
+                  <select class="filter-select detail-equip-sel" data-eq-pid="${p.id}" data-eq-slot="leg">${buildEqOpts("Bacak", detEq.leg)}</select>
+                </div>
+                <div class="detail-equip-row">
+                  <label>Kol</label>
+                  <select class="filter-select detail-equip-sel" data-eq-pid="${p.id}" data-eq-slot="arm">${buildEqOpts("Kol", detEq.arm)}</select>
+                </div>
+                ${detEff.activeSet ? `<div class="sq-equip-set-badge">✨ Set Aktif: ${detEff.activeSet.name} (Tüm ekipmana +1)</div>` : ""}
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function toggleRowDetailInPlace(row, cid) {
+    const prevDetail = playersTableBody.querySelector("tr.detail-row");
+    if (prevDetail) prevDetail.remove();
+    const prevExpanded = playersTableBody.querySelector("tr.player-row.expanded");
+    if (prevExpanded && prevExpanded !== row) prevExpanded.classList.remove("expanded");
+
+    if (expandedCardId === cid) {
+      expandedCardId = null;
+      row.classList.remove("expanded");
+      return;
+    }
+
+    const found = allPlayers.find((x) => x.id === cid);
+    if (!found) return;
+    expandedCardId = cid;
+    row.classList.add("expanded");
+    row.insertAdjacentHTML("afterend", buildDetailRowHtml(found));
+  }
+
   // Render Table & Pagination
   function renderTable() {
     const total = filteredPlayers.length;
@@ -823,56 +934,7 @@
       `);
 
       if (isExpanded) {
-        const detEq = playerDetailEquip.get(p.id) || { cle: "", leg: "", arm: "" };
-        const detEff = getEffectiveStats(p, state.level, detEq);
-        let emblemTxt = "Yok";
-        if (state.emblem) {
-          const modeTxt = { full: "Tam bonus", half: "Yarım bonus", none: "Etkisiz" }[detEff.emblemMode];
-          emblemTxt = `${state.emblem.team} ${state.emblem.year} ${state.emblem.stars}★ — ${modeTxt}`;
-        }
-        const weatherTxt = WEATHER_LABELS[p.weather] || p.weather;
-        const isGk = p.pos === "GK" || p.role === "KL";
-        const buildEqOpts = (slotName, selId) => {
-          const items = getEquipmentsBySlot(slotName, isGk);
-          return `<option value="">Yok</option>` + items.map((it) =>
-            `<option value="${it.id}" ${String(it.id) === String(selId) ? "selected" : ""}>${it.name} (${it.buff})</option>`
-          ).join("");
-        };
-
-        rowsHtml.push(`
-          <tr class="detail-row">
-            <td colspan="13">
-              <div class="detail-popup-wrap">
-                ${renderGoleyCardHtml(p, detEff, state.level)}
-
-                <div class="detail-side-info">
-                  <div class="detail-side-row"><span>Bölge</span><strong>${p.league}</strong></div>
-                  <div class="detail-side-row"><span>Maliyet</span><strong>${p.cost}</strong></div>
-                  <div class="detail-side-row"><span>Hava Durumu</span><strong>${weatherTxt}</strong></div>
-                  <div class="detail-side-row"><span>Amblem</span><strong class="emb-mode-${detEff.emblemMode}">${emblemTxt}</strong></div>
-                  ${p.skill ? `<div class="detail-side-row"><span>Tam Yetenek</span><strong>⚡ ${p.skill}</strong></div>` : ""}
-
-                  <div class="detail-equip-sim">
-                    <div class="detail-equip-title">Ekipman Simülatörü</div>
-                    <div class="detail-equip-row">
-                      <label>Krampon</label>
-                      <select class="filter-select detail-equip-sel" data-eq-pid="${p.id}" data-eq-slot="cle">${buildEqOpts("Krampon", detEq.cle)}</select>
-                    </div>
-                    <div class="detail-equip-row">
-                      <label>Bacak</label>
-                      <select class="filter-select detail-equip-sel" data-eq-pid="${p.id}" data-eq-slot="leg">${buildEqOpts("Bacak", detEq.leg)}</select>
-                    </div>
-                    <div class="detail-equip-row">
-                      <label>Kol</label>
-                      <select class="filter-select detail-equip-sel" data-eq-pid="${p.id}" data-eq-slot="arm">${buildEqOpts("Kol", detEq.arm)}</select>
-                    </div>
-                    ${detEff.activeSet ? `<div class="sq-equip-set-badge">✨ Set Aktif: ${detEff.activeSet.name} (Tüm ekipmana +1)</div>` : ""}
-                  </div>
-                </div>
-              </div>
-            </td>
-          </tr>
-        `);
+        rowsHtml.push(buildDetailRowHtml(p));
       }
     }
 
@@ -1155,12 +1217,34 @@
     compareModal.classList.remove("hidden");
   }
 
+  function debounce(fn, delay = 110) {
+    let timer = null;
+    return (...args) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn(...args), delay);
+    };
+  }
+
+  function rafSchedule(fn) {
+    let rafId = 0;
+    return (...args) => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        fn(...args);
+      });
+    };
+  }
+
   // Event Listeners
   function bindEvents() {
+    const applyFiltersDebounced = debounce(applyFilters, 110);
+    const applyFiltersRaf = rafSchedule(applyFilters);
+
     searchInput.addEventListener("input", () => {
       state.search = searchInput.value;
       clearSearchBtn.classList.toggle("hidden", !state.search);
-      applyFilters();
+      applyFiltersDebounced();
     });
 
     clearSearchBtn.addEventListener("click", () => {
@@ -1202,7 +1286,7 @@
     for (const [el, key] of numInputs) {
       el.addEventListener("input", () => {
         state[key] = parseInt(el.value, 10) || 0;
-        applyFilters();
+        applyFiltersDebounced();
       });
     }
 
@@ -1224,7 +1308,7 @@
           const si = Number(inp.dataset.subIdx);
           const v = parseInt(inp.value, 10);
           state.minSub[si] = (!isNaN(v) && v > 0) ? v : 0;
-          applyFilters();
+          applyFiltersDebounced();
         });
       });
     }
@@ -1343,7 +1427,7 @@
     levelSlider.addEventListener("input", () => {
       state.level = parseInt(levelSlider.value, 10) || 0;
       levelValue.textContent = String(state.level);
-      applyFilters();
+      applyFiltersRaf();
     });
 
     // Table Header Sort (toggles asc/desc on repeated clicks)
@@ -1375,7 +1459,7 @@
       applyFilters();
     });
 
-    // Row click (expand) or Compare / Favorite / Send-to-Squad click
+    // Row click (instant expand) or double-click (floating card on cols 0..4) or Favorite / Squad / Compare click
     playersTableBody.addEventListener("click", (e) => {
       const favBtn = e.target.closest("button[data-fav-id]");
       if (favBtn) {
@@ -1419,8 +1503,19 @@
       const row = e.target.closest("tr.player-row");
       if (!row) return;
       const cid = Number(row.dataset.id);
-      expandedCardId = expandedCardId === cid ? null : cid;
-      renderTable();
+      toggleRowDetailInPlace(row, cid);
+    });
+
+    playersTableBody.addEventListener("dblclick", (e) => {
+      if (e.target.closest("button") || e.target.closest(".detail-row")) return;
+      const row = e.target.closest("tr.player-row");
+      const cell = e.target.closest("td");
+      if (!row || !cell || cell.cellIndex > 4) return;
+      const cid = Number(row.dataset.id);
+      const found = allPlayers.find((x) => x.id === cid);
+      if (found) {
+        openSquadCardModal(found, playerDetailEquip.get(found.id) || null, state.level);
+      }
     });
 
     playersTableBody.addEventListener("change", (e) => {
@@ -1431,7 +1526,10 @@
       const cur = playerDetailEquip.get(pid) || { cle: "", leg: "", arm: "" };
       cur[slot] = sel.value;
       playerDetailEquip.set(pid, cur);
-      renderTable();
+      const detRow = sel.closest("tr.detail-row");
+      const found = allPlayers.find((x) => x.id === pid);
+      if (detRow && found) detRow.outerHTML = buildDetailRowHtml(found);
+      else renderTable();
     });
 
     const favOnlyBtn = document.getElementById("favOnlyBtn");
@@ -1715,8 +1813,40 @@
     applyMode(saved);
   }
 
+  function initAnimMode() {
+    const savedOff = localStorage.getItem("rbd_no_anim") === "1";
+    const applyAnimMode = (isOff) => {
+      document.body.classList.toggle("no-anim", isOff);
+      window.__rbdPauseBg = isOff;
+      const btn = document.getElementById("animToggleBtn");
+      if (btn) {
+        btn.classList.toggle("is-off", isOff);
+        btn.innerHTML = isOff ? "<span>✨</span><span>Animasyonları Aç</span>" : "<span>⚡</span><span>Animasyonları Kapat</span>";
+        btn.setAttribute("aria-pressed", String(isOff));
+        btn.title = isOff ? "Arka plan ve kart animasyonlarını aç" : "Arka plan ve Süper kart efektlerini kapat (Performans Modu)";
+      }
+      window.dispatchEvent(new CustomEvent("rbd:anim-change", { detail: { paused: isOff } }));
+    };
+
+    const bgSelect = document.getElementById("bgThemeSelect");
+    if (bgSelect && bgSelect.parentNode && !document.getElementById("animToggleBtn")) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = "animToggleBtn";
+      btn.className = "color-mode-btn anim-toggle-btn";
+      bgSelect.insertAdjacentElement("beforebegin", btn);
+      btn.addEventListener("click", () => {
+        const nextOff = !document.body.classList.contains("no-anim");
+        localStorage.setItem("rbd_no_anim", nextOff ? "1" : "0");
+        applyAnimMode(nextOff);
+      });
+    }
+    applyAnimMode(savedOff);
+  }
+
   function initNavigation() {
     initColorMode();
+    initAnimMode();
     document.querySelectorAll("#mainNav .nav-link[data-tab]").forEach((btn) => {
       if (btn.tagName === "A" && btn.getAttribute("href")) return;
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
@@ -2194,212 +2324,238 @@
   // =========================================================================
   const FORMATIONS = {
     "4-4-2 A": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 70, x: 15 },
-      { role: "DF", label: "DF", y: 73, x: 37 },
-      { role: "DF", label: "DF", y: 73, x: 63 },
-      { role: "BEK", label: "BEK", y: 70, x: 85 },
-      { role: "KNT", label: "KNT", y: 45, x: 15 },
-      { role: "OS", label: "OS", y: 48, x: 37 },
-      { role: "OS", label: "OS", y: 48, x: 63 },
-      { role: "KNT", label: "KNT", y: 45, x: 85 },
-      { role: "FRV", label: "FRV", y: 18, x: 36 },
-      { role: "FRV", label: "FRV", y: 18, x: 64 }
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "BEK", label: "SLB", y: 71, x: 11 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "BEK", label: "SĞB", y: 71, x: 89 },
+      { role: "KNT", label: "SLK", y: 42, x: 11 },
+      { role: "OS", label: "SL OS", y: 44, x: 37 },
+      { role: "OS", label: "SĞ OS", y: 44, x: 63 },
+      { role: "KNT", label: "SĞK", y: 42, x: 89 },
+      { role: "FRV", label: "SL SF", y: 10, x: 37 },
+      { role: "FRV", label: "SĞ SF", y: 10, x: 63 }
     ],
     "4-4-2 B": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 70, x: 15 },
-      { role: "DF", label: "DF", y: 73, x: 37 },
-      { role: "DF", label: "DF", y: 73, x: 63 },
-      { role: "BEK", label: "BEK", y: 70, x: 85 },
-      { role: "K DF", label: "KDF", y: 56, x: 50 },
-      { role: "OS", label: "OS", y: 42, x: 25 },
-      { role: "OS", label: "OS", y: 42, x: 75 },
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "K DF", label: "LWB", y: 68, x: 10 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "K DF", label: "RWB", y: 68, x: 90 },
+      { role: "LBR", label: "LBR", y: 56, x: 50 },
+      { role: "OS", label: "SL OS", y: 42, x: 28 },
+      { role: "OS", label: "SĞ OS", y: 42, x: 72 },
       { role: "OOS", label: "OOS", y: 30, x: 50 },
-      { role: "FRV", label: "FRV", y: 16, x: 36 },
-      { role: "FRV", label: "FRV", y: 16, x: 64 }
+      { role: "FRV", label: "SL SF", y: 9, x: 36 },
+      { role: "GF", label: "GF", y: 9, x: 64 }
     ],
-    "4-3-3": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 70, x: 15 },
-      { role: "DF", label: "DF", y: 73, x: 37 },
-      { role: "DF", label: "DF", y: 73, x: 63 },
-      { role: "BEK", label: "BEK", y: 70, x: 85 },
-      { role: "OS", label: "OS", y: 48, x: 25 },
-      { role: "OS", label: "OS", y: 52, x: 50 },
-      { role: "OS", label: "OS", y: 48, x: 75 },
-      { role: "K FT", label: "KFT", y: 22, x: 20 },
-      { role: "FRV", label: "FRV", y: 16, x: 50 },
-      { role: "K FT", label: "KFT", y: 22, x: 80 }
+    "4-4-2 C": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "K DF", label: "LWB", y: 68, x: 10 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "K DF", label: "RWB", y: 68, x: 90 },
+      { role: "LBR", label: "LBR", y: 56, x: 50 },
+      { role: "KNT", label: "SLK", y: 40, x: 25 },
+      { role: "KNT", label: "SĞK", y: 40, x: 75 },
+      { role: "OOS", label: "OOS", y: 30, x: 50 },
+      { role: "FRV", label: "SL SF", y: 10, x: 37 },
+      { role: "FRV", label: "SĞ SF", y: 10, x: 63 }
     ],
-    "4-2-3-1": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 71, x: 15 },
-      { role: "DF", label: "DF", y: 74, x: 37 },
-      { role: "DF", label: "DF", y: 74, x: 63 },
-      { role: "BEK", label: "BEK", y: 71, x: 85 },
-      { role: "K DF", label: "KDF", y: 56, x: 35 },
-      { role: "K DF", label: "KDF", y: 56, x: 65 },
-      { role: "KNT", label: "KNT", y: 35, x: 18 },
+    "4-3-3 A": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "BEK", label: "SLB", y: 71, x: 11 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "BEK", label: "SĞB", y: 71, x: 89 },
+      { role: "LBR", label: "LBR", y: 56, x: 50 },
+      { role: "OS", label: "SL OS", y: 41, x: 31 },
+      { role: "OS", label: "SĞ OS", y: 41, x: 69 },
+      { role: "K FT", label: "LWF", y: 12, x: 22 },
+      { role: "FRV", label: "FRV", y: 9, x: 50 },
+      { role: "K FT", label: "RWF", y: 12, x: 78 }
+    ],
+    "4-3-3 B": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "K DF", label: "LWB", y: 68, x: 10 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "K DF", label: "RWB", y: 68, x: 90 },
+      { role: "LBR", label: "LDM", y: 51, x: 33 },
+      { role: "LBR", label: "RDM", y: 51, x: 67 },
       { role: "OOS", label: "OOS", y: 35, x: 50 },
-      { role: "KNT", label: "KNT", y: 35, x: 82 },
-      { role: "FRV", label: "FRV", y: 15, x: 50 }
+      { role: "K FT", label: "LWF", y: 12, x: 22 },
+      { role: "GF", label: "GF", y: 9, x: 50 },
+      { role: "K FT", label: "RWF", y: 12, x: 78 }
     ],
-    "3-5-2": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "DF", label: "DF", y: 73, x: 25 },
-      { role: "DF", label: "DF", y: 75, x: 50 },
-      { role: "DF", label: "DF", y: 73, x: 75 },
-      { role: "KNT", label: "KNT", y: 46, x: 14 },
-      { role: "OS", label: "OS", y: 50, x: 36 },
+    "4-3-3 C": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "K DF", label: "LWB", y: 68, x: 10 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "K DF", label: "RWB", y: 68, x: 90 },
+      { role: "LBR", label: "LBR", y: 55, x: 50 },
+      { role: "OS", label: "SL OS", y: 41, x: 28 },
+      { role: "OS", label: "SĞ OS", y: 41, x: 72 },
+      { role: "FRV", label: "SL SF", y: 12, x: 30 },
+      { role: "GF", label: "GF", y: 9, x: 50 },
+      { role: "FRV", label: "SĞ SF", y: 12, x: 70 }
+    ],
+    "4-5-1 A": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "BEK", label: "SLB", y: 71, x: 11 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "BEK", label: "SĞB", y: 71, x: 89 },
+      { role: "KNT", label: "SLK", y: 41, x: 9 },
+      { role: "OS", label: "SL OS", y: 42, x: 30 },
       { role: "OOS", label: "OOS", y: 36, x: 50 },
-      { role: "OS", label: "OS", y: 50, x: 64 },
-      { role: "KNT", label: "KNT", y: 46, x: 86 },
-      { role: "FRV", label: "FRV", y: 18, x: 36 },
-      { role: "FRV", label: "FRV", y: 18, x: 64 }
+      { role: "OS", label: "SĞ OS", y: 42, x: 70 },
+      { role: "KNT", label: "SĞK", y: 41, x: 91 },
+      { role: "GF", label: "GF", y: 9, x: 50 }
     ],
-    "5-3-2": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 66, x: 14 },
-      { role: "DF", label: "DF", y: 74, x: 32 },
+    "4-5-1 B": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "K DF", label: "LWB", y: 68, x: 10 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "K DF", label: "RWB", y: 68, x: 90 },
+      { role: "OS", label: "SL OS", y: 43, x: 11 },
+      { role: "OOS", label: "LAM", y: 34, x: 31 },
+      { role: "OS", label: "OS", y: 47, x: 50 },
+      { role: "OOS", label: "RAM", y: 34, x: 69 },
+      { role: "OS", label: "SĞ OS", y: 43, x: 89 },
+      { role: "GF", label: "GF", y: 9, x: 50 }
+    ],
+    "4-5-1 C": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "BEK", label: "SLB", y: 71, x: 11 },
+      { role: "DF", label: "SL DF", y: 74, x: 37 },
+      { role: "DF", label: "SĞ DF", y: 74, x: 63 },
+      { role: "BEK", label: "SĞB", y: 71, x: 89 },
+      { role: "KNT", label: "SLK", y: 37, x: 9 },
+      { role: "LBR", label: "LDM", y: 48, x: 31 },
+      { role: "OOS", label: "OOS", y: 38, x: 50 },
+      { role: "LBR", label: "RDM", y: 48, x: 69 },
+      { role: "KNT", label: "SĞK", y: 37, x: 91 },
+      { role: "FRV", label: "FRV", y: 9, x: 50 }
+    ],
+    "3-5-2 A": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "DF", label: "SL DF", y: 73, x: 26 },
+      { role: "DF", label: "DF", y: 75, x: 50 },
+      { role: "DF", label: "SĞ DF", y: 73, x: 74 },
+      { role: "KNT", label: "SLK", y: 42, x: 8 },
+      { role: "OS", label: "SL OS", y: 42, x: 30 },
+      { role: "LBR", label: "LBR", y: 52, x: 50 },
+      { role: "OS", label: "SĞ OS", y: 42, x: 70 },
+      { role: "KNT", label: "SĞK", y: 42, x: 92 },
+      { role: "FRV", label: "SL SF", y: 10, x: 37 },
+      { role: "FRV", label: "SĞ SF", y: 10, x: 63 }
+    ],
+    "3-5-2 B": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "DF", label: "SL DF", y: 73, x: 26 },
+      { role: "DF", label: "DF", y: 75, x: 50 },
+      { role: "DF", label: "SĞ DF", y: 73, x: 74 },
+      { role: "KNT", label: "SLK", y: 38, x: 8 },
+      { role: "OOS", label: "LAM", y: 32, x: 33 },
+      { role: "LBR", label: "LBR", y: 50, x: 50 },
+      { role: "OOS", label: "RAM", y: 32, x: 67 },
+      { role: "KNT", label: "SĞK", y: 38, x: 92 },
+      { role: "FRV", label: "SL SF", y: 9, x: 30 },
+      { role: "GF", label: "GF", y: 9, x: 70 }
+    ],
+    "3-5-2 C": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "DF", label: "SL DF", y: 70, x: 26 },
       { role: "LİB", label: "LİB", y: 76, x: 50 },
-      { role: "DF", label: "DF", y: 74, x: 68 },
-      { role: "BEK", label: "BEK", y: 66, x: 86 },
-      { role: "OS", label: "OS", y: 48, x: 28 },
-      { role: "OS", label: "OS", y: 50, x: 50 },
-      { role: "OS", label: "OS", y: 48, x: 72 },
-      { role: "FRV", label: "FRV", y: 18, x: 36 },
-      { role: "FRV", label: "FRV", y: 18, x: 64 }
+      { role: "DF", label: "SĞ DF", y: 70, x: 74 },
+      { role: "LBR", label: "LDM", y: 52, x: 35 },
+      { role: "LBR", label: "RDM", y: 52, x: 65 },
+      { role: "KNT", label: "SLK", y: 36, x: 8 },
+      { role: "KNT", label: "SĞK", y: 36, x: 92 },
+      { role: "OOS", label: "OOS", y: 32, x: 50 },
+      { role: "FRV", label: "SL SF", y: 10, x: 37 },
+      { role: "FRV", label: "SĞ SF", y: 10, x: 63 }
     ],
-    "4-1-2-1-2": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 70, x: 15 },
-      { role: "DF", label: "DF", y: 73, x: 37 },
-      { role: "DF", label: "DF", y: 73, x: 63 },
-      { role: "BEK", label: "BEK", y: 70, x: 85 },
-      { role: "K DF", label: "KDF", y: 58, x: 50 },
-      { role: "OS", label: "OS", y: 44, x: 28 },
-      { role: "OS", label: "OS", y: 44, x: 72 },
-      { role: "OOS", label: "OOS", y: 31, x: 50 },
-      { role: "FRV", label: "FRV", y: 16, x: 36 },
-      { role: "FRV", label: "FRV", y: 16, x: 64 }
+    "3-4-3 A": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "DF", label: "SL DF", y: 73, x: 26 },
+      { role: "DF", label: "DF", y: 75, x: 50 },
+      { role: "DF", label: "SĞ DF", y: 73, x: 74 },
+      { role: "KNT", label: "SLK", y: 43, x: 8 },
+      { role: "OS", label: "SL OS", y: 43, x: 36 },
+      { role: "OS", label: "SĞ OS", y: 43, x: 64 },
+      { role: "KNT", label: "SĞK", y: 43, x: 92 },
+      { role: "FRV", label: "SL SF", y: 12, x: 27 },
+      { role: "FRV", label: "FRV", y: 9, x: 50 },
+      { role: "FRV", label: "SĞ SF", y: 12, x: 73 }
     ],
-    "4-3-3 Ofansif": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 71, x: 15 },
-      { role: "DF", label: "DF", y: 74, x: 37 },
-      { role: "DF", label: "DF", y: 74, x: 63 },
-      { role: "BEK", label: "BEK", y: 71, x: 85 },
-      { role: "K DF", label: "KDF", y: 56, x: 50 },
-      { role: "OOS", label: "OOS", y: 40, x: 30 },
-      { role: "OOS", label: "OOS", y: 40, x: 70 },
-      { role: "K FT", label: "KFT", y: 20, x: 20 },
-      { role: "FRV", label: "FRV", y: 15, x: 50 },
-      { role: "K FT", label: "KFT", y: 20, x: 80 }
+    "3-4-3 B": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "DF", label: "SL DF", y: 73, x: 26 },
+      { role: "DF", label: "DF", y: 75, x: 50 },
+      { role: "DF", label: "SĞ DF", y: 73, x: 74 },
+      { role: "LBR", label: "LBR", y: 55, x: 36 },
+      { role: "OS", label: "SL OS", y: 41, x: 9 },
+      { role: "OOS", label: "OOS", y: 36, x: 62 },
+      { role: "OS", label: "SĞ OS", y: 41, x: 91 },
+      { role: "K FT", label: "LWF", y: 12, x: 22 },
+      { role: "GF", label: "GF", y: 9, x: 50 },
+      { role: "K FT", label: "RWF", y: 12, x: 78 }
     ],
-    "4-3-2-1": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 71, x: 15 },
-      { role: "DF", label: "DF", y: 74, x: 37 },
-      { role: "DF", label: "DF", y: 74, x: 63 },
-      { role: "BEK", label: "BEK", y: 71, x: 85 },
-      { role: "OS", label: "OS", y: 53, x: 26 },
-      { role: "OS", label: "OS", y: 55, x: 50 },
-      { role: "OS", label: "OS", y: 53, x: 74 },
-      { role: "OOS", label: "OOS", y: 34, x: 34 },
-      { role: "OOS", label: "OOS", y: 34, x: 66 },
-      { role: "FRV", label: "FRV", y: 16, x: 50 }
-    ],
-    "4-3-1-2": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 71, x: 15 },
-      { role: "DF", label: "DF", y: 74, x: 37 },
-      { role: "DF", label: "DF", y: 74, x: 63 },
-      { role: "BEK", label: "BEK", y: 71, x: 85 },
-      { role: "OS", label: "OS", y: 51, x: 26 },
-      { role: "OS", label: "OS", y: 53, x: 50 },
-      { role: "OS", label: "OS", y: 51, x: 74 },
-      { role: "OOS", label: "OOS", y: 34, x: 50 },
-      { role: "FRV", label: "FRV", y: 17, x: 36 },
-      { role: "FRV", label: "FRV", y: 17, x: 64 }
-    ],
-    "4-5-1": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 71, x: 15 },
-      { role: "DF", label: "DF", y: 74, x: 37 },
-      { role: "DF", label: "DF", y: 74, x: 63 },
-      { role: "BEK", label: "BEK", y: 71, x: 85 },
-      { role: "KNT", label: "KNT", y: 45, x: 14 },
-      { role: "OS", label: "OS", y: 50, x: 33 },
-      { role: "OS", label: "OS", y: 48, x: 50 },
-      { role: "OS", label: "OS", y: 50, x: 67 },
-      { role: "KNT", label: "KNT", y: 45, x: 86 },
-      { role: "FRV", label: "FRV", y: 17, x: 50 }
-    ],
-    "4-1-4-1": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 71, x: 15 },
-      { role: "DF", label: "DF", y: 74, x: 37 },
-      { role: "DF", label: "DF", y: 74, x: 63 },
-      { role: "BEK", label: "BEK", y: 71, x: 85 },
-      { role: "K DF", label: "KDF", y: 57, x: 50 },
-      { role: "KNT", label: "KNT", y: 40, x: 15 },
-      { role: "OS", label: "OS", y: 42, x: 37 },
-      { role: "OS", label: "OS", y: 42, x: 63 },
-      { role: "KNT", label: "KNT", y: 40, x: 85 },
-      { role: "FRV", label: "FRV", y: 17, x: 50 }
-    ],
-    "3-4-3": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "DF", label: "DF", y: 73, x: 25 },
-      { role: "LİB", label: "LİB", y: 75, x: 50 },
-      { role: "DF", label: "DF", y: 73, x: 75 },
-      { role: "KNT", label: "KNT", y: 46, x: 15 },
-      { role: "OS", label: "OS", y: 49, x: 37 },
-      { role: "OS", label: "OS", y: 49, x: 63 },
-      { role: "KNT", label: "KNT", y: 46, x: 85 },
-      { role: "K FT", label: "KFT", y: 21, x: 20 },
-      { role: "FRV", label: "FRV", y: 16, x: 50 },
-      { role: "K FT", label: "KFT", y: 21, x: 80 }
-    ],
-    "3-4-1-2": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "DF", label: "DF", y: 73, x: 25 },
-      { role: "LİB", label: "LİB", y: 75, x: 50 },
-      { role: "DF", label: "DF", y: 73, x: 75 },
-      { role: "KNT", label: "KNT", y: 47, x: 15 },
-      { role: "OS", label: "OS", y: 50, x: 37 },
-      { role: "OS", label: "OS", y: 50, x: 63 },
-      { role: "KNT", label: "KNT", y: 47, x: 85 },
-      { role: "OOS", label: "OOS", y: 33, x: 50 },
-      { role: "FRV", label: "FRV", y: 17, x: 36 },
-      { role: "FRV", label: "FRV", y: 17, x: 64 }
-    ],
-    "5-4-1": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 66, x: 14 },
-      { role: "DF", label: "DF", y: 74, x: 32 },
+    "3-4-3 C": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "DF", label: "SL DF", y: 70, x: 26 },
       { role: "LİB", label: "LİB", y: 76, x: 50 },
-      { role: "DF", label: "DF", y: 74, x: 68 },
-      { role: "BEK", label: "BEK", y: 66, x: 86 },
-      { role: "KNT", label: "KNT", y: 43, x: 16 },
-      { role: "OS", label: "OS", y: 46, x: 38 },
-      { role: "OS", label: "OS", y: 46, x: 62 },
-      { role: "KNT", label: "KNT", y: 43, x: 84 },
-      { role: "FRV", label: "FRV", y: 17, x: 50 }
+      { role: "DF", label: "SĞ DF", y: 70, x: 74 },
+      { role: "LBR", label: "LBR", y: 53, x: 35 },
+      { role: "OS", label: "OS", y: 43, x: 63 },
+      { role: "KNT", label: "SLK", y: 41, x: 8 },
+      { role: "KNT", label: "SĞK", y: 41, x: 92 },
+      { role: "FRV", label: "SL SF", y: 12, x: 27 },
+      { role: "GF", label: "GF", y: 9, x: 50 },
+      { role: "FRV", label: "SĞ SF", y: 12, x: 73 }
     ],
-    "5-2-3": [
-      { role: "KL", label: "KL", y: 88, x: 50 },
-      { role: "BEK", label: "BEK", y: 66, x: 14 },
-      { role: "DF", label: "DF", y: 74, x: 32 },
+    "5-4-1 A": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "BEK", label: "SLB", y: 67, x: 7 },
+      { role: "DF", label: "SL DF", y: 72, x: 29 },
       { role: "LİB", label: "LİB", y: 76, x: 50 },
-      { role: "DF", label: "DF", y: 74, x: 68 },
-      { role: "BEK", label: "BEK", y: 66, x: 86 },
-      { role: "OS", label: "OS", y: 47, x: 35 },
-      { role: "OS", label: "OS", y: 47, x: 65 },
-      { role: "K FT", label: "KFT", y: 21, x: 20 },
-      { role: "FRV", label: "FRV", y: 16, x: 50 },
-      { role: "K FT", label: "KFT", y: 21, x: 80 }
+      { role: "DF", label: "SĞ DF", y: 72, x: 71 },
+      { role: "BEK", label: "SĞB", y: 67, x: 93 },
+      { role: "LBR", label: "LBR", y: 53, x: 39 },
+      { role: "KNT", label: "SLK", y: 39, x: 15 },
+      { role: "KNT", label: "SĞK", y: 39, x: 85 },
+      { role: "OOS", label: "OOS", y: 31, x: 62 },
+      { role: "GF", label: "GF", y: 9, x: 50 }
+    ],
+    "5-4-1 B": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "K DF", label: "LWB", y: 67, x: 7 },
+      { role: "DF", label: "SL DF", y: 73, x: 29 },
+      { role: "DF", label: "DF", y: 75, x: 50 },
+      { role: "DF", label: "SĞ DF", y: 73, x: 71 },
+      { role: "K DF", label: "RWB", y: 67, x: 93 },
+      { role: "LBR", label: "LBR", y: 53, x: 39 },
+      { role: "OS", label: "SL OS", y: 37, x: 17 },
+      { role: "OS", label: "SĞ OS", y: 37, x: 83 },
+      { role: "OOS", label: "OOS", y: 29, x: 62 },
+      { role: "GF", label: "GF", y: 9, x: 50 }
+    ],
+    "5-4-1 C": [
+      { role: "KL", label: "KL", y: 91, x: 50 },
+      { role: "BEK", label: "SLB", y: 67, x: 7 },
+      { role: "DF", label: "SL DF", y: 72, x: 29 },
+      { role: "LİB", label: "LİB", y: 76, x: 50 },
+      { role: "DF", label: "SĞ DF", y: 72, x: 71 },
+      { role: "BEK", label: "SĞB", y: 67, x: 93 },
+      { role: "LBR", label: "LDM", y: 51, x: 37 },
+      { role: "LBR", label: "RDM", y: 51, x: 63 },
+      { role: "KNT", label: "SLK", y: 35, x: 17 },
+      { role: "KNT", label: "SĞK", y: 35, x: 83 },
+      { role: "FRV", label: "FRV", y: 9, x: 50 }
     ]
   };
 
@@ -2764,9 +2920,15 @@
 
     refreshSavedSquadsSelect();
 
+    const renderSquadPoolDebounced = debounce(renderSquadPool, 100);
+    const updateSquadLevelRaf = rafSchedule(() => {
+      renderSquadPitch();
+      renderSquadPool();
+    });
+
     document.getElementById("sqSearch").addEventListener("input", (e) => {
       sqState.search = e.target.value.trim().toLowerCase();
-      renderSquadPool();
+      renderSquadPoolDebounced();
     });
 
     const allBtn = document.getElementById("sqAllTeamsBtn");
@@ -2811,8 +2973,7 @@
     lvlSlider.addEventListener("input", () => {
       sqState.level = Number(lvlSlider.value);
       document.getElementById("sqLevelVal").textContent = String(sqState.level);
-      renderSquadPitch();
-      renderSquadPool();
+      updateSquadLevelRaf();
     });
 
     initSquadCardModal();
@@ -2840,22 +3001,22 @@
   }
 
   function buildCardPortraitHtml(p, isMini) {
-    const cls = isMini ? "sq-pool-avatar" : "rc-portrait-wrap";
-    const src = p.modelId ? `assets/cards/${p.modelId}.png` : `assets/cards/${p.id}.png`;
-    const fallbackSvg = isMini
-      ? `<svg width="24" height="24" viewBox="0 0 36 32" fill="none"><path d="M9 3L2 8.5L5.5 14L9.5 11.5V29H26.5V11.5L30.5 14L34 8.5L27 3H22.5C21.8 5.2 20.1 6.5 18 6.5C15.9 6.5 14.2 5.2 13.5 3H9Z" fill="rgba(248,250,252,0.75)" stroke="#0f172a" stroke-width="1.5"/></svg>`
-      : `<div class="rc-portrait-fallback">
-           <svg viewBox="0 0 120 130" width="128" height="140" fill="none">
-             <circle cx="60" cy="34" r="22" fill="rgba(255,255,255,0.86)" stroke="#0f172a" stroke-width="3"/>
-             <path d="M26 62L8 82L22 96L36 84V124H84V84L98 96L112 82L94 62H76C73 70 67 74 60 74C53 74 47 70 44 62H26Z" fill="rgba(255,255,255,0.86)" stroke="#0f172a" stroke-width="3"/>
-             <text x="60" y="106" text-anchor="middle" font-size="22" font-weight="900" fill="#0f172a">${p.number || ""}</text>
-           </svg>
-         </div>`;
+    if (isMini) {
+      return `
+        <div class="sq-pool-avatar">
+          <svg width="24" height="24" viewBox="0 0 36 32" fill="none"><path d="M9 3L2 8.5L5.5 14L9.5 11.5V29H26.5V11.5L30.5 14L34 8.5L27 3H22.5C21.8 5.2 20.1 6.5 18 6.5C15.9 6.5 14.2 5.2 13.5 3H9Z" fill="rgba(248,250,252,0.75)" stroke="#0f172a" stroke-width="1.5"/></svg>
+        </div>
+      `;
+    }
     return `
-      <div class="${cls}">
-        <img class="${isMini ? "" : "rc-portrait-img"}" src="${src}" alt="${p.name}"
-          onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-        <div style="display:none;align-items:center;justify-content:center;width:100%;height:100%;">${fallbackSvg}</div>
+      <div class="rc-portrait-wrap">
+        <div class="rc-portrait-fallback">
+          <svg viewBox="0 0 120 130" width="128" height="140" fill="none">
+            <circle cx="60" cy="34" r="22" fill="rgba(255,255,255,0.86)" stroke="#0f172a" stroke-width="3"/>
+            <path d="M26 62L8 82L22 96L36 84V124H84V84L98 96L112 82L94 62H76C73 70 67 74 60 74C53 74 47 70 44 62H26Z" fill="rgba(255,255,255,0.86)" stroke="#0f172a" stroke-width="3"/>
+            <text x="60" y="106" text-anchor="middle" font-size="22" font-weight="900" fill="#0f172a">${p.number || ""}</text>
+          </svg>
+        </div>
       </div>
     `;
   }
@@ -2875,44 +3036,41 @@
     ];
 
     const barsHtml = mainStats.map((st) => {
-      const pct = Math.min(100, Math.round((st.val / 115) * 100));
-      const color =
-        st.val >= 90 ? "#b45cff" :
-        st.val >= 80 ? "#ef4444" :
-        st.val >= 70 ? "#f59e0b" :
-        st.val >= 60 ? "#eab308" : "#9ca3af";
+      const pct = Math.max(4, Math.min(100, Math.round((st.val / 125) * 100)));
+      const valCls = st.val >= 60 ? "rc-stat-val-hot" : "";
       return `
         <div class="rc-stat-row">
           <span class="rc-stat-lbl">${st.label}</span>
           <div class="rc-bar-track">
-            <div class="rc-bar-fill" style="width:${pct}%;background:${color};"></div>
+            <div class="rc-bar-fill" style="width:${pct}%;"></div>
           </div>
-          <span class="rc-stat-val" style="color:${color};">${st.val}</span>
+          <span class="rc-stat-val ${valCls}">${st.val}</span>
         </div>
       `;
     }).join("");
 
     const embIcon = (window.EMBLEM_ICONS || {})[p.team];
     const crestContent = embIcon
-      ? `<img src="assets/emblems/${embIcon}" alt="${p.team}" style="width:36px;height:36px;object-fit:contain;" />`
+      ? `<img src="assets/emblems/${embIcon}" alt="${p.team}" class="rc-crest-img" />`
       : `<span>${p.team || "RBD"}</span>`;
 
     return `
       <div class="rebound-card rc-grade-${p.grade}">
-        <div class="rc-top-grade">${gradeLabel}</div>
         <div class="rc-hero">
-          <div class="rc-holo-grid"></div>
+          <div class="rc-top-grade">${gradeLabel}</div>
+          <div class="rc-sunburst"></div>
+          <div class="rc-gloss"></div>
           ${p.grade === "Master" ? `<div class="holo-hex"></div><div class="holo-shine"></div>` : ""}
           <div class="rc-pos-block">
             <span class="rc-pos-code">${formatRoleCode(p.role)}</span>
             <span class="rc-pos-sub">${roleGroup}</span>
-            <div class="rc-cost-hex" title="Maliyet">${p.cost || 0}</div>
+            <div class="rc-cost-hex" title="Maliyet"><span>${p.cost || 0}</span></div>
           </div>
           <div class="rc-weather-box" title="${WEATHER_LABELS[p.weather] || "Hava Durumu"}">${weatherIcon}</div>
           ${buildCardPortraitHtml(p, false)}
         </div>
         <div class="rc-name-strip">
-          <div class="rc-club-crest" title="${p.teamName}">
+          <div class="rc-club-crest" title="${p.goleyTeam || ""}">
             ${crestContent}
           </div>
           <div class="rc-player-title">${yrShort} ${p.name}</div>
@@ -2928,28 +3086,149 @@
   let floatingCardTopZ = 2500;
   let floatingCardCounter = 0;
 
-  function openSquadCardModal(p, equipIds = null) {
+  function clearFloatingCompareGlow() {
+    const layer = document.getElementById("floatingCardsLayer");
+    if (!layer) return;
+    for (const el of layer.children) {
+      el.classList.remove("compare-glow");
+    }
+  }
+
+  function closePairCompareOverlay() {
+    const existing = document.getElementById("pairCompareOverlay");
+    if (existing) existing.remove();
+  }
+
+  function openPairCompareOverlay(cardA, cardB) {
+    closePairCompareOverlay();
+    if (!cardA || !cardB) return;
+
+    const pA = cardA.player, effA = cardA.eff, lvlA = cardA.level;
+    const pB = cardB.player, effB = cardB.eff, lvlB = cardB.level;
+
+    const mainKeys = [
+      { key: "pwr", name: "PWR" },
+      { key: "ofa", name: "OFA" },
+      { key: "def", name: "DEF" },
+      { key: "guc", name: "GÜÇ" },
+      { key: "hiz", name: "HIZ" },
+      { key: "tek", name: "TEK" },
+      { key: "zhn", name: "ZHN" }
+    ];
+    const mainRowsHtml = mainKeys.map((st) => {
+      const lv = effA[st.key];
+      const rv = effB[st.key];
+      const diff = lv - rv;
+      return `
+        <div class="cmp-det-row cmp-det-main-row">
+          <span class="cmp-det-diff-l">${diff > 0 ? `▲${diff}` : ""}</span>
+          <span class="cmp-det-val ${diff > 0 ? "win" : ""}">${lv}</span>
+          <span class="cmp-det-label">${st.name}</span>
+          <span class="cmp-det-val ${diff < 0 ? "win" : ""}">${rv}</span>
+          <span class="cmp-det-diff-r">${diff < 0 ? `${Math.abs(diff)}▲` : ""}</span>
+        </div>
+      `;
+    }).join("");
+
+    const hasGk = pA.role === "KL" || pB.role === "KL";
+    const statsToCmp = hasGk ? SUB_STAT_NAMES : SUB_STAT_NAMES.slice(0, 18);
+    const subRowsHtml = statsToCmp.map((st) => {
+      const lv = effA.sub[st.idx];
+      const rv = effB.sub[st.idx];
+      const diff = lv - rv;
+      return `
+        <div class="cmp-det-row">
+          <span class="cmp-det-diff-l">${diff > 0 ? `▲${diff}` : ""}</span>
+          <span class="cmp-det-val ${diff > 0 ? "win" : ""}">${lv}</span>
+          <span class="cmp-det-label">${st.name}</span>
+          <span class="cmp-det-val ${diff < 0 ? "win" : ""}">${rv}</span>
+          <span class="cmp-det-diff-r">${diff < 0 ? `${Math.abs(diff)}▲` : ""}</span>
+        </div>
+      `;
+    }).join("");
+
+    const buildCardCol = (p, eff, lvl) => `
+      <div class="pair-compare-card-col">
+        <div class="flip-card-scene pair-cmp-flip" title="Tıklayıp çevir">
+          <div class="flip-card-inner">
+            <div class="flip-card-face flip-card-front">${renderReboundCardFrontHtml(p, eff)}</div>
+            <div class="flip-card-face flip-card-back">${renderGoleyCardHtml(p, eff, lvl)}</div>
+          </div>
+        </div>
+        <button type="button" class="btn-card-flip pair-cmp-flip-btn">Dön</button>
+      </div>
+    `;
+
+    const overlay = document.createElement("div");
+    overlay.id = "pairCompareOverlay";
+    overlay.className = "pair-compare-backdrop";
+    overlay.innerHTML = `
+      <div class="modal-box modal-xl pair-compare-box">
+        <div class="modal-header">
+          <h3>⚡ İkili Kart Karşılaştırma — ${pA.name} vs ${pB.name}</h3>
+          <button type="button" id="closePairCompareBtn" class="modal-close" title="Kapat ve Kartlara Dön">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="pair-compare-stage">
+            ${buildCardCol(pA, effA, lvlA)}
+            <div class="cmp-details-panel pair-cmp-panel">
+              <div class="cmp-details-title">Ana Değerler (Lv.${lvlA} vs Lv.${lvlB})</div>
+              ${mainRowsHtml}
+              <div class="cmp-details-title pair-cmp-sub-title">Alt İstatistikler</div>
+              ${subRowsHtml}
+            </div>
+            ${buildCardCol(pB, effB, lvlB)}
+          </div>
+        </div>
+      </div>
+    `;
+
+    overlay.querySelector("#closePairCompareBtn").addEventListener("click", closePairCompareOverlay);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closePairCompareOverlay();
+    });
+    overlay.querySelectorAll(".pair-compare-card-col").forEach((col) => {
+      const inner = col.querySelector(".flip-card-inner");
+      const flip = () => inner.classList.toggle("is-flipped");
+      col.querySelector(".pair-cmp-flip").addEventListener("click", flip);
+      col.querySelector(".pair-cmp-flip-btn").addEventListener("click", flip);
+    });
+
+    document.body.appendChild(overlay);
+  }
+
+  function openSquadCardModal(p, equipIds = null, levelOverride = null) {
     const layer = document.getElementById("floatingCardsLayer");
     if (!layer || !p) return;
 
-    const eff = getEffectiveStatsAtLevel(p, sqState.level, equipIds);
+    const lvl = levelOverride !== null && levelOverride !== undefined ? levelOverride : sqState.level;
+    const eff = getEffectiveStatsAtLevel(p, lvl, equipIds);
     floatingCardTopZ += 2;
-    const offsetStep = (floatingCardCounter % 6) * 28;
-    floatingCardCounter++;
+    const slotIdx = floatingCardCounter++;
 
     const win = document.createElement("div");
     win.className = "floating-card-window";
+    win.dataset.grade = p.grade || "Normal";
     win.style.zIndex = String(floatingCardTopZ);
-    const left = Math.max(12, Math.min(window.innerWidth - 300, Math.round((window.innerWidth - 288) / 2) - 60 + offsetStep));
-    const top = Math.max(72, Math.min(window.innerHeight - 520, Math.round((window.innerHeight - 510) / 2) - 40 + offsetStep));
-    win.style.left = `${left}px`;
-    win.style.top = `${top}px`;
+    win._cardPayload = { player: p, eff, level: lvl };
+
+    const baseCenterLeft = Math.round((window.innerWidth - 288) / 2);
+    const sideShift = window.innerWidth >= 700 ? (slotIdx % 2 === 0 ? -165 : 165) : 0;
+    const stepShift = Math.floor(slotIdx / 2) % 3 * 24;
+    let posX = Math.max(8, Math.min(window.innerWidth - 296, baseCenterLeft + sideShift + stepShift));
+    let posY = Math.max(72, Math.min(window.innerHeight - 520, Math.round((window.innerHeight - 510) / 2) - 24 + stepShift));
+    const applyPos = (x, y) => {
+      win._posX = x;
+      win._posY = y;
+      win.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    };
+    applyPos(posX, posY);
 
     win.innerHTML = `
-      <div class="flip-card-scene" title="Ekranın istediğin yerine sürükle • Tıklayıp çevir">
+      <div class="flip-card-scene" title="Ekranın istediğin yerine sürükle • İki kartı üst üste bırakıp karşılaştır • Tıklayıp çevir">
         <div class="flip-card-inner">
           <div class="flip-card-face flip-card-front">${renderReboundCardFrontHtml(p, eff)}</div>
-          <div class="flip-card-face flip-card-back">${renderGoleyCardHtml(p, eff, sqState.level)}</div>
+          <div class="flip-card-face flip-card-back">${renderGoleyCardHtml(p, eff, lvl)}</div>
         </div>
       </div>
       <div class="floating-card-actions">
@@ -2974,15 +3253,49 @@
     };
 
     flipBtn.addEventListener("click", toggleFlip);
-    closeBtn.addEventListener("click", () => win.remove());
+    closeBtn.addEventListener("click", () => {
+      document.body.classList.remove("dragging-floating-card");
+      window.__rbdPauseBg = false;
+      clearFloatingCompareGlow();
+      win.remove();
+    });
     win.addEventListener("pointerdown", bringToFront);
 
     let dragging = false;
     let moved = false;
     let startX = 0;
     let startY = 0;
-    let origLeft = 0;
-    let origTop = 0;
+    let origX = 0;
+    let origY = 0;
+    let curX = 0;
+    let curY = 0;
+    let maxX = 0;
+    let maxY = 0;
+    let sceneW = 288;
+    let sceneH = 468;
+    let cachedOthers = [];
+    let lastGlowTarget = null;
+    let rafId = 0;
+
+    const findCachedOverlap = (x, y) => {
+      const area1 = sceneW * sceneH;
+      if (area1 <= 0 || cachedOthers.length === 0) return null;
+      const r1Right = x + sceneW;
+      const r1Bottom = y + sceneH;
+      let best = null;
+      let bestArea = 0;
+      for (let i = 0; i < cachedOthers.length; i++) {
+        const o = cachedOthers[i];
+        const ow = Math.max(0, Math.min(r1Right, o.right) - Math.max(x, o.left));
+        const oh = Math.max(0, Math.min(r1Bottom, o.bottom) - Math.max(y, o.top));
+        const overlapArea = ow * oh;
+        if (overlapArea / area1 >= 0.25 && ow >= 85 && oh >= 110 && overlapArea > bestArea) {
+          bestArea = overlapArea;
+          best = o.win;
+        }
+      }
+      return best;
+    };
 
     scene.addEventListener("pointerdown", (e) => {
       if (e.button !== 0) return;
@@ -2991,9 +3304,27 @@
       moved = false;
       startX = e.clientX;
       startY = e.clientY;
-      const rect = win.getBoundingClientRect();
-      origLeft = rect.left;
-      origTop = rect.top;
+      origX = win._posX || 0;
+      origY = win._posY || 0;
+      curX = origX;
+      curY = origY;
+      maxX = Math.max(8, window.innerWidth - win.offsetWidth - 8);
+      maxY = Math.max(8, window.innerHeight - win.offsetHeight - 8);
+      sceneW = scene.offsetWidth || 288;
+      sceneH = scene.offsetHeight || 468;
+
+      cachedOthers = [];
+      for (const otherWin of layer.children) {
+        if (otherWin === win || !otherWin._cardPayload) continue;
+        const os = otherWin.querySelector(".flip-card-scene");
+        if (!os) continue;
+        const r = os.getBoundingClientRect();
+        cachedOthers.push({ win: otherWin, left: r.left, top: r.top, right: r.right, bottom: r.bottom });
+      }
+      lastGlowTarget = null;
+      win.classList.add("is-dragging");
+      document.body.classList.add("dragging-floating-card");
+      window.__rbdPauseBg = true;
       scene.setPointerCapture(e.pointerId);
     });
 
@@ -3002,18 +3333,61 @@
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
       if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
-      const maxLeft = Math.max(8, window.innerWidth - win.offsetWidth - 8);
-      const maxTop = Math.max(8, window.innerHeight - win.offsetHeight - 8);
-      win.style.left = `${Math.min(maxLeft, Math.max(8, origLeft + dx))}px`;
-      win.style.top = `${Math.min(maxTop, Math.max(8, origTop + dy))}px`;
+      curX = Math.min(maxX, Math.max(8, origX + dx));
+      curY = Math.min(maxY, Math.max(8, origY + dy));
+
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
+        if (!dragging) return;
+        applyPos(curX, curY);
+        if (moved) {
+          const targetWin = findCachedOverlap(curX, curY);
+          if (targetWin !== lastGlowTarget) {
+            if (lastGlowTarget) lastGlowTarget.classList.remove("compare-glow");
+            if (targetWin) {
+              win.classList.add("compare-glow");
+              targetWin.classList.add("compare-glow");
+            } else {
+              win.classList.remove("compare-glow");
+            }
+            lastGlowTarget = targetWin;
+          }
+        }
+      });
     });
 
-    scene.addEventListener("pointerup", (e) => {
+    const finishDrag = (e, cancelled) => {
       if (!dragging) return;
       dragging = false;
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      win.classList.remove("is-dragging");
+      document.body.classList.remove("dragging-floating-card");
+      window.__rbdPauseBg = false;
       try { scene.releasePointerCapture(e.pointerId); } catch {}
-      if (!moved) toggleFlip();
-    });
+      clearFloatingCompareGlow();
+      lastGlowTarget = null;
+      if (cancelled) {
+        applyPos(origX, origY);
+        return;
+      }
+      if (!moved) {
+        toggleFlip();
+        return;
+      }
+      applyPos(curX, curY);
+      const targetWin = findCachedOverlap(curX, curY);
+      if (targetWin) {
+        applyPos(origX, origY);
+        openPairCompareOverlay(win._cardPayload, targetWin._cardPayload);
+      }
+    };
+
+    scene.addEventListener("pointerup", (e) => finishDrag(e, false));
+    scene.addEventListener("pointercancel", (e) => finishDrag(e, true));
 
     layer.appendChild(win);
   }
@@ -3021,6 +3395,11 @@
   function initSquadCardModal() {
     document.addEventListener("keydown", (e) => {
       if (e.key !== "Escape") return;
+      const pairOverlay = document.getElementById("pairCompareOverlay");
+      if (pairOverlay) {
+        pairOverlay.remove();
+        return;
+      }
       const layer = document.getElementById("floatingCardsLayer");
       if (!layer || layer.children.length === 0) return;
       const cards = Array.from(layer.children);
@@ -3246,7 +3625,7 @@
       if (sqState.grade && p.grade !== sqState.grade) continue;
       if (sqState.year && String(p.year) !== sqState.year) continue;
       if (sqState.search) {
-        const hay = `${p.name} ${p.goleyTeam} ${p.teamName}`.toLowerCase();
+        const hay = `${p.name} ${p.goleyTeam}`.toLowerCase();
         if (!hay.includes(sqState.search)) continue;
       }
       list.push({ p, eff: getEffectiveStatsAtLevel(p, sqState.level) });
@@ -3324,7 +3703,7 @@
         return;
       }
       const matches = allPlayers.filter((p) =>
-        `${p.name} ${p.goleyTeam} ${p.teamName}`.toLowerCase().includes(q)
+        `${p.name} ${p.goleyTeam}`.toLowerCase().includes(q)
       ).slice(0, 12);
 
       if (matches.length === 0) {
@@ -3359,13 +3738,17 @@
       }
     });
 
+    const updateCmpLevelRaf = rafSchedule(() => {
+      renderCompareView();
+      applyFilters();
+    });
+
     lvlSlider.addEventListener("input", () => {
       state.level = Number(lvlSlider.value);
       lvlValue.textContent = String(state.level);
       levelSlider.value = String(state.level);
       levelValue.textContent = String(state.level);
-      renderCompareView();
-      applyFilters();
+      updateCmpLevelRaf();
     });
 
     clearBtn.addEventListener("click", () => {
@@ -3418,7 +3801,7 @@
     });
   }
 
-  // Load Data (supports both file:// via window.PLAYERS_DATA / window.REVIVAL_PLAYERS and http via fetch)
+  // Load Data (supports both file:// via window.PLAYERS_DATA and http via fetch)
   async function init() {
     bindEvents();
     initNavigation();
@@ -3427,13 +3810,14 @@
     initSquadView();
     initCompareView();
     try {
-      const preloaded = window.PLAYERS_DATA || window.REVIVAL_PLAYERS;
+      const preloaded = window.PLAYERS_DATA;
       if (Array.isArray(preloaded) && preloaded.length > 0) {
         allPlayers = preloaded;
       } else {
         const res = await fetch("players.json");
         allPlayers = await res.json();
       }
+      hydratePlayerTeams(allPlayers);
       dbBadge.textContent = `${allPlayers.length.toLocaleString("tr-TR")} Kart`;
       try {
         const savedEmb = localStorage.getItem("rbd_emblem");

@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="theme-light.css" />
 </head>
 <body data-page="players">
-  <script>try{if(localStorage.getItem("rbd_color_mode")==="dark")document.body.classList.add("theme-dark");}catch(_){}</script>
+  <script>try{if(localStorage.getItem("rbd_color_mode")==="dark")document.body.classList.add("theme-dark");if(localStorage.getItem("rbd_no_anim")==="1")document.body.classList.add("no-anim");}catch(_){}</script>
   <canvas id="asciiBgCanvas" aria-hidden="true"></canvas>
   <!-- Top Navbar -->
   <header class="navbar">
@@ -44,7 +44,7 @@
         </select>
         <a href="index.html" class="brand" data-nav="home">
           <img class="brand-logo-img" src="assets/favicon.png" alt="RBD" />
-          <span class="brand-rvl">RBD</span><span class="brand-tracker">Tracker</span>
+          <span class="brand-rbd">RBD</span><span class="brand-tracker">Tracker</span>
         </a>
         <nav class="nav-links" id="mainNav">
           <a class="nav-link" href="index.html" data-tab="home"><span class="nav-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/></svg></span><span class="nav-txt">Ana Sayfa</span></a>
@@ -125,19 +125,27 @@
 
     <!-- ==================== 1. OYUNCULAR ==================== -->
     <div id="view-players" class="page-view">
-      <section class="hero-card">
-        <h1 class="hero-title">Rebound Oyuncu Kartları</h1>
-        <p class="hero-subtitle">1958–2016 sezonlarından tüm oyuncu kartlarını arayın, filtreleyin ve karşılaştırın.</p>
+      <section class="hero-card rbd-deck-head">
+        <div class="rbd-head-main">
+          <span class="rbd-head-kicker">VERİTABANI • 1958–2016</span>
+          <h1 class="hero-title">Rebound Oyuncu Kartları</h1>
+          <p class="hero-subtitle">Tüm sezon kartlarını mevkii, enderlik, bölge, amblem ve seviye simülasyonuyla filtreleyin.</p>
+        </div>
+        <div class="rbd-head-stat">
+          <div class="results-counter">
+            <span id="resultCountText">15.583 oyuncu bulundu</span>
+          </div>
+        </div>
       </section>
 
-      <section class="filter-panel">
-        <div class="filter-top-row">
-          <div class="search-box">
+      <section class="filter-panel rbd-command-deck">
+        <div class="rbd-cmd-toolbar">
+          <div class="search-box rbd-cmd-search">
             <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text" id="searchInput" placeholder="Oyuncu ara..." autocomplete="off" />
+            <input type="text" id="searchInput" placeholder="Oyuncu veya kulüp ara..." autocomplete="off" />
             <button id="clearSearchBtn" class="clear-input-btn hidden" title="Aramayı Temizle">✕</button>
           </div>
 
@@ -163,14 +171,21 @@
             <option value="name_asc">Sırala: İsim (A–Z)</option>
           </select>
 
-          <button id="favOnlyBtn" class="btn-outline fav-filter-btn" title="Sadece Favori Oyuncular">
-            ★ Favoriler (<span id="favCount">0</span>)
-          </button>
-
-          <button id="advFilterBtn" class="btn-outline">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
-            Detaylı Filtre
-          </button>
+          <div class="rbd-tool-actions">
+            <button id="favOnlyBtn" class="btn-outline fav-filter-btn" title="Sadece Favori Oyuncular">
+              ★ Favoriler (<span id="favCount">0</span>)
+            </button>
+            <button id="advFilterBtn" class="btn-outline">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              Detaylı
+            </button>
+            <button id="teamSpiritBtn" class="btn-spirit">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Amblem
+              <span id="spiritActiveBadge" class="spirit-badge hidden"></span>
+            </button>
+            <button id="resetMainBtn" class="btn-outline btn-reset-inline" title="Tüm filtreleri ve amblemi sıfırla">↺ Sıfırla</button>
+          </div>
         </div>
 
         <div id="advFilterPanel" class="adv-filter-panel hidden">
@@ -202,13 +217,14 @@
           </div>
         </div>
 
-        <div class="filter-pills-row">
-          <div class="pill-section pill-section-role">
-            <span class="pill-label">MEVKİ</span>
-            <div class="pill-group" id="rolePills">
+        <div class="rbd-bento-filters">
+          <div class="rbd-bento-cell rbd-cell-role">
+            <div class="rbd-cell-head"><span>MEVKİ</span></div>
+            <div class="rbd-role-grid" id="rolePills">
               <button class="pill pill-fw" data-role="GF">GF</button>
               <button class="pill pill-fw" data-role="FRV">FRV</button>
               <button class="pill pill-fw" data-role="K FT">K FT</button>
+              <button class="pill pill-gk" data-role="KL">KL</button>
               <button class="pill pill-mf" data-role="OOS">OOS</button>
               <button class="pill pill-mf" data-role="KNT">KNT</button>
               <button class="pill pill-mf" data-role="OS">OS</button>
@@ -217,53 +233,37 @@
               <button class="pill pill-df" data-role="BEK">BEK</button>
               <button class="pill pill-df" data-role="DF">DF</button>
               <button class="pill pill-df" data-role="LİB">LİB</button>
-              <button class="pill pill-gk" data-role="KL">KL</button>
             </div>
           </div>
 
-          <div class="filter-sub-grid">
-            <div class="pill-section pill-section-grade">
-              <span class="pill-label">KART ENDERLİĞİ</span>
-              <div class="pill-group" id="gradePills">
-                <button class="pill pill-gold" data-grade="Gold">Efsane</button>
-                <button class="pill pill-master" data-grade="Master">Süper</button>
-                <button class="pill pill-elite" data-grade="Elite">Uzman</button>
-                <button class="pill pill-rare" data-grade="Rare">Ender</button>
-                <button class="pill pill-special" data-grade="Special">Özel</button>
-                <button class="pill pill-normal" data-grade="Normal">Normal</button>
-              </div>
+          <div class="rbd-bento-cell rbd-cell-grade">
+            <div class="rbd-cell-head"><span>KART ENDERLİĞİ</span></div>
+            <div class="rbd-grade-grid" id="gradePills">
+              <button class="pill pill-gold" data-grade="Gold">Efsane</button>
+              <button class="pill pill-master" data-grade="Master">Süper</button>
+              <button class="pill pill-elite" data-grade="Elite">Uzman</button>
+              <button class="pill pill-rare" data-grade="Rare">Ender</button>
+              <button class="pill pill-special" data-grade="Special">Özel</button>
+              <button class="pill pill-normal" data-grade="Normal">Normal</button>
             </div>
+          </div>
 
-            <div class="pill-section pill-section-region">
-              <span class="pill-label">BÖLGE</span>
-              <div class="pill-group" id="regionPills">
+          <div class="rbd-bento-cell rbd-cell-side">
+            <div class="rbd-side-sub">
+              <div class="rbd-cell-head"><span>BÖLGE</span></div>
+              <div class="rbd-region-grid" id="regionPills">
                 <button class="pill pill-region" data-region="Güney Avrupa">Güney Avrupa</button>
                 <button class="pill pill-region" data-region="Kuzey Avrupa">Kuzey Avrupa</button>
                 <button class="pill pill-region" data-region="Türkiye">Türkiye</button>
                 <button class="pill pill-region" data-region="Milli Takımlar">Milli Takımlar</button>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div class="filter-bottom-row">
-          <div class="spirit-level-wrap">
-            <button id="teamSpiritBtn" class="btn-spirit">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Amblem
-              <span id="spiritActiveBadge" class="spirit-badge hidden"></span>
-            </button>
-            <button id="resetMainBtn" class="btn-outline btn-reset-inline" title="Tüm filtreleri ve amblemi sıfırla">✕ Sıfırla</button>
-          </div>
-
-          <div class="bottom-right-controls">
-            <div class="results-counter">
-              <span id="resultCountText">15.583 oyuncu bulundu</span>
-            </div>
-            <div class="level-control">
-              <span class="level-label">LEVEL</span>
-              <input type="range" id="levelSlider" min="0" max="25" value="0" />
-              <span class="level-badge" id="levelValue">0</span>
+            <div class="rbd-level-dock">
+              <span class="level-label">SEVİYE (LEVEL)</span>
+              <div class="rbd-level-row">
+                <input type="range" id="levelSlider" min="0" max="25" value="0" />
+                <span class="level-badge" id="levelValue">0</span>
+              </div>
             </div>
           </div>
         </div>
@@ -305,44 +305,53 @@
     <!-- ==================== 2. AMBLEMLER ==================== -->
     <div id="view-emblems" class="page-view hidden">
       <div class="breadcrumb">Anasayfa / <span>Amblemler</span></div>
-      <section class="page-head">
-        <h1 class="hero-title">Amblemler</h1>
-        <p class="hero-subtitle">Her takım tek kartta listelenir; kart içindeki anahtarla yıllı ve tüm yıllar amblemi arasında geçiş yapılır. Yıldızlara tıklayarak seviye bonuslarını inceleyin.</p>
+      <section class="page-head rbd-deck-head">
+        <div class="rbd-head-main">
+          <span class="rbd-head-kicker">TAKIM RUHU SİMÜLATÖRÜ</span>
+          <h1 class="hero-title">Amblemler</h1>
+          <p class="hero-subtitle">Kart içindeki anahtarla yıllı veya tüm yıllar amblemi arasında geçin; yıldızlara tıklayarak seviye bonuslarını görün.</p>
+        </div>
       </section>
 
-      <section class="filter-panel">
-        <div class="emb-filter-block">
-          <label class="pill-label">AMBLEM ARA</label>
-          <div class="search-box">
-            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" id="embSearchInput" placeholder="Takım ara..." autocomplete="off" />
+      <section class="filter-panel rbd-emb-deck">
+        <div class="rbd-emb-row-top">
+          <div class="rbd-field-group">
+            <label class="rbd-field-lbl" for="embSearchInput">AMBLEM ARA</label>
+            <div class="search-box">
+              <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="embSearchInput" placeholder="Takım adı ara..." autocomplete="off" />
+            </div>
+          </div>
+          <div class="rbd-field-group rbd-field-year">
+            <label class="rbd-field-lbl" for="embYearFilter">SEZON YILI</label>
+            <select id="embYearFilter" class="filter-select">
+              <option value="">Tüm Yıllar</option>
+            </select>
           </div>
         </div>
-        <div class="emb-filter-block">
-          <label class="pill-label" for="embYearFilter">YIL</label>
-          <select id="embYearFilter" class="filter-select">
-            <option value="">Tüm Yıllar</option>
-          </select>
-        </div>
-        <div class="pill-section">
-          <span class="pill-label">BÖLGE</span>
-          <div class="pill-group" id="embRegionPills">
-            <button class="pill pill-dot-tr" data-emb-region="Türkiye"><span class="dot dot-red"></span>Türkiye</button>
-            <button class="pill pill-dot-sa" data-emb-region="Güney Avrupa"><span class="dot dot-blue"></span>Güney Avrupa</button>
-            <button class="pill pill-dot-ka" data-emb-region="Kuzey Avrupa"><span class="dot dot-amber"></span>Kuzey Avrupa</button>
-            <button class="pill pill-dot-mt" data-emb-region="Milli Takımlar"><span class="dot dot-green"></span>Milli Takımlar</button>
+
+        <div class="rbd-emb-row-bot">
+          <div class="rbd-bento-cell">
+            <div class="rbd-cell-head"><span>BÖLGE</span></div>
+            <div class="rbd-chip-strip" id="embRegionPills">
+              <button class="pill pill-dot-tr" data-emb-region="Türkiye"><span class="dot dot-red"></span>Türkiye</button>
+              <button class="pill pill-dot-sa" data-emb-region="Güney Avrupa"><span class="dot dot-blue"></span>Güney Avrupa</button>
+              <button class="pill pill-dot-ka" data-emb-region="Kuzey Avrupa"><span class="dot dot-amber"></span>Kuzey Avrupa</button>
+              <button class="pill pill-dot-mt" data-emb-region="Milli Takımlar"><span class="dot dot-green"></span>Milli Takımlar</button>
+            </div>
           </div>
-        </div>
-        <div class="pill-section">
-          <span class="pill-label">ENDERLİK</span>
-          <div class="pill-group" id="embStarPills">
-            <button class="pill emb-star-pill" data-emb-stars="1">★☆☆☆☆</button>
-            <button class="pill emb-star-pill" data-emb-stars="2">★★☆☆☆</button>
-            <button class="pill emb-star-pill" data-emb-stars="3">★★★☆☆</button>
-            <button class="pill emb-star-pill" data-emb-stars="4">★★★★☆</button>
-            <button class="pill emb-star-pill active" data-emb-stars="5">★★★★★</button>
+
+          <div class="rbd-bento-cell">
+            <div class="rbd-cell-head"><span>ENDERLİK</span></div>
+            <div class="rbd-star-segmented" id="embStarPills">
+              <button class="pill emb-star-pill" data-emb-stars="1">1★</button>
+              <button class="pill emb-star-pill" data-emb-stars="2">2★</button>
+              <button class="pill emb-star-pill" data-emb-stars="3">3★</button>
+              <button class="pill emb-star-pill" data-emb-stars="4">4★</button>
+              <button class="pill emb-star-pill active" data-emb-stars="5">5★</button>
+            </div>
           </div>
         </div>
       </section>
@@ -353,45 +362,50 @@
     <!-- ==================== 3. EKİPMANLAR ==================== -->
     <div id="view-equipments" class="page-view hidden">
       <div class="breadcrumb">Anasayfa / <span>Ekipmanlar</span></div>
-      <section class="page-head">
-        <h1 class="hero-title">Ekipmanlar</h1>
-        <p class="hero-subtitle">90 ekipman kartı (kol, bacak, krampon), 30 set ve 22 aktif yetenek. Kramponlar aktif yetenek kazandırır; aynı setin kol + bacak + kramponu bir araya gelince her parça kendi statına +1 daha verir.</p>
+      <section class="page-head rbd-deck-head">
+        <div class="rbd-head-main">
+          <span class="rbd-head-kicker">KART EKİPMAN SİSTEMİ</span>
+          <h1 class="hero-title">Ekipmanlar</h1>
+          <p class="hero-subtitle">90 ekipman kartı, 30 set ve 22 aktif yetenek. Aynı setin kol + bacak + kramponu takıldığında her parça kendi statına +1 ek bonus verir.</p>
+        </div>
+        <div class="rbd-head-stat">
+          <span class="eq-count-label" id="eqCountLabel">90 ekipman gösteriliyor</span>
+        </div>
       </section>
 
-      <section class="filter-panel">
-        <label class="pill-label">ARA</label>
-        <div class="search-box">
-          <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input type="text" id="eqSearchInput" placeholder="Ekipman, set, yetenek veya buff ara..." autocomplete="off" />
+      <section class="filter-panel rbd-eq-deck">
+        <div class="rbd-eq-top">
+          <div class="eq-subtabs rbd-eq-tabs" id="eqSubtabs">
+            <button class="eq-subtab active" data-eqtab="sets">Ekipman Setleri (3'lü)</button>
+            <button class="eq-subtab" data-eqtab="items">Tekli Parçalar</button>
+            <button class="eq-subtab" data-eqtab="skills">Aktif Yetenekler</button>
+          </div>
+          <div class="search-box rbd-eq-search">
+            <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="eqSearchInput" placeholder="Ekipman, set, yetenek veya buff ara..." autocomplete="off" />
+          </div>
         </div>
-        <span class="eq-count-label" id="eqCountLabel">90 ekipman gösteriliyor</span>
+
+        <div id="eqSubFilters" class="eq-subfilters rbd-eq-subdock hidden">
+          <div class="rbd-eq-dock-group">
+            <span class="rbd-cell-head-inline">YER</span>
+            <div class="rbd-chip-strip" id="eqSlotPills">
+              <button class="pill" data-eq-slot="Kol">Kol</button>
+              <button class="pill" data-eq-slot="Bacak">Bacak</button>
+              <button class="pill" data-eq-slot="Krampon">Krampon</button>
+            </div>
+          </div>
+          <div class="rbd-eq-dock-group">
+            <span class="rbd-cell-head-inline">TAKILABİLİR</span>
+            <div class="rbd-chip-strip" id="eqTargetPills">
+              <button class="pill" data-eq-target="Saha oyuncusu">Saha oyuncusu</button>
+              <button class="pill" data-eq-target="Kaleci">Kaleci</button>
+            </div>
+          </div>
+        </div>
       </section>
-
-      <div class="eq-subtabs" id="eqSubtabs">
-        <button class="eq-subtab active" data-eqtab="sets">Ekipman Setleri (3'lü)</button>
-        <button class="eq-subtab" data-eqtab="items">Tekli Parçalar</button>
-        <button class="eq-subtab" data-eqtab="skills">Aktif Yetenekler</button>
-      </div>
-
-      <div id="eqSubFilters" class="eq-subfilters">
-        <div class="pill-section">
-          <span class="pill-label">YER</span>
-          <div class="pill-group" id="eqSlotPills">
-            <button class="pill" data-eq-slot="Kol">Kol</button>
-            <button class="pill" data-eq-slot="Bacak">Bacak</button>
-            <button class="pill" data-eq-slot="Krampon">Krampon</button>
-          </div>
-        </div>
-        <div class="pill-section">
-          <span class="pill-label">TAKILABİLİR</span>
-          <div class="pill-group" id="eqTargetPills">
-            <button class="pill" data-eq-target="Saha oyuncusu">Saha oyuncusu</button>
-            <button class="pill" data-eq-target="Kaleci">Kaleci</button>
-          </div>
-        </div>
-      </div>
 
       <div id="equipmentsContent" class="eq-grid"></div>
     </div>
@@ -421,20 +435,22 @@
               <select id="sqFormation" class="filter-select">
                 <option value="4-4-2 A">4-4-2 A</option>
                 <option value="4-4-2 B">4-4-2 B</option>
-                <option value="4-1-2-1-2">4-1-2-1-2 (Baklava)</option>
-                <option value="4-3-3">4-3-3</option>
-                <option value="4-3-3 Ofansif">4-3-3 (Ofansif)</option>
-                <option value="4-2-3-1">4-2-3-1</option>
-                <option value="4-3-2-1">4-3-2-1 (Noel Ağacı)</option>
-                <option value="4-3-1-2">4-3-1-2</option>
-                <option value="4-5-1">4-5-1</option>
-                <option value="4-1-4-1">4-1-4-1</option>
-                <option value="3-5-2">3-5-2</option>
-                <option value="3-4-3">3-4-3</option>
-                <option value="3-4-1-2">3-4-1-2</option>
-                <option value="5-3-2">5-3-2</option>
-                <option value="5-4-1">5-4-1</option>
-                <option value="5-2-3">5-2-3</option>
+                <option value="4-4-2 C">4-4-2 C</option>
+                <option value="4-3-3 A">4-3-3 A</option>
+                <option value="4-3-3 B">4-3-3 B</option>
+                <option value="4-3-3 C">4-3-3 C</option>
+                <option value="4-5-1 A">4-5-1 A</option>
+                <option value="4-5-1 B">4-5-1 B</option>
+                <option value="4-5-1 C">4-5-1 C</option>
+                <option value="3-5-2 A">3-5-2 A</option>
+                <option value="3-5-2 B">3-5-2 B</option>
+                <option value="3-5-2 C">3-5-2 C</option>
+                <option value="3-4-3 A">3-4-3 A</option>
+                <option value="3-4-3 B">3-4-3 B</option>
+                <option value="3-4-3 C">3-4-3 C</option>
+                <option value="5-4-1 A">5-4-1 A</option>
+                <option value="5-4-1 B">5-4-1 B</option>
+                <option value="5-4-1 C">5-4-1 C</option>
               </select>
             </div>
             <div class="sq-field">
